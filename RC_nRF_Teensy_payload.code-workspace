@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"name": "RC_nRF_T_every_payload",
+			"path": "../RC_nRF_T_every_payload"
+		}
+	],
+	"settings": {
+		"git.ignoreLimitWarning": true
+	}
+}
