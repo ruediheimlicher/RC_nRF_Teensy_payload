@@ -22,7 +22,7 @@
 #define ANZEIGE_TAST    0
 #define ANZEIGE_CALIB   2
 #define ANZEIGE_ADC     3
-
+#define ANZEIGE_SLAVE   4
 
 #define HOMESCREEN      0
 #define MODELLSCREEN    1 // SYMPEL, TROTTLE ...
@@ -31,6 +31,23 @@
 
 
 #define MODUSSCREEN     5
+
+   #define POT0LO 620  // Min wert vom ADC Pot 0
+   #define POT0HI 3400 // Max wert vom ADC Pot 0
+
+
+   #define POT1LO 620  // Min wert vom ADC Pot 1
+   #define POT1HI 3480 // Max wert vom ADC Pot 1
+
+
+
+#define POTLO   1300
+#define POTHI  2900
+
+
+//Impulslaenge, ms
+#define PPMLO  850  // Minwert ms fuer Impulslaenge
+#define PPMHI  2150 // Maxwert ms fur Impulslaenge
 
 // 
 #define  MODELL         0
@@ -44,10 +61,44 @@
 #define CALIB_END       4
 
 #define PPM_DIR_PIN     3
-#define PPM_DATA_PIN    4  // PPM-Eingang an Pin 3
+#define PPM_DATA_PIN    4  // PPM-Eingang an Pin 4
+
 #define  NUM_CHANNELS   8;
 #define  FRAME_LENGTH   40000; // 20 ms
 #define  SYNC_PULSE     30;     // 300 µs
+
+
+
+#define EEPROM_WRITE 0
+#define EEPROM_READ 1
+
+#define EEPROMINDEX_U 0x10
+#define EEPROMINDEX_O 0x20
+#define EEPROMINDEX_M 0x30
+
+#define EEPROMLEVELSETTINGS 0x40
+#define EEPROMEXPOSETTINGS 0x48
+
+#define EEPROMSLAVEINDEX_M 0x64
+
+// defines for PINS
+// links
+#define PITCH_PIN A3 // PSB2: A6
+#define YAW_PIN A2   // PCB2: A3
+
+// rechts
+#define ROLL_PIN A1
+#define THROTTLE_PIN A0
+
+#define TASTATUR_PIN A2
+#define TASTE_OFF 0
+#define TASTE_ON 1
+
+#define BATT_PIN A6
+
+
+
+
 
 #define arrow_width 16
 #define arrow_height 16
