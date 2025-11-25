@@ -17,6 +17,8 @@ struct Signal
    
 };
 
+#define SLAVE_PIN 4
+
 #define PPM_PIN 6
 #define PULSE_LENGTH 200    // µs
 #define CHANNEL_MIN 1000
@@ -45,7 +47,7 @@ struct Signal
 #define PFEIL_LEFT   2
 #define PFEIL_RIGHT  3
 
-#define BUZZPIN 6    // BUZZER PCB nano 5: 5
+#define BUZZPIN         7    // BUZZER PCB nano 5: 5
 #define  BUZZINTERVALL 0xF0
 
 
@@ -151,6 +153,9 @@ struct Signal
 #define VBY    12
 #define HBX    6
 #define HBY    54
+
+
+
 
 
 #endif

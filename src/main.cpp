@@ -21,6 +21,8 @@
 
 const uint64_t pipeOut = 0xABCDABCD71LL; // NOTE: The address in the Transmitter and Receiver code must be the same "0xABCDABCD71LL" | Verici ve Alıcı kodundaki adres aynı olmalıdır
 
+int Border_Mapvar255_raw( int val, int lower, int middle, int upper, bool reverse);
+
 // extern "C"
 
 // github.com/olikraus/u8g2/discussions/1865
@@ -43,32 +45,10 @@ RF24 radio(CE_PIN, CSN_PIN);
 
 #define EEPROMTASTE 5
 
-#define EEPROM_WRITE 0
-#define EEPROM_READ 1
 
-#define EEPROMINDEX_U 0x10
-#define EEPROMINDEX_O 0x20
-#define EEPROMINDEX_M 0x30
-
-#define EEPROMLEVELSETTINGS 0x40
-#define EEPROMEXPOSETTINGS 0x48
 
 #define BLINKRATE 0x4FF
 
-// defines for PINS
-// links
-#define PITCH_PIN A3 // PSB2: A6
-#define YAW_PIN A2   // PCB2: A3
-
-// rechts
-#define ROLL_PIN A1
-#define THROTTLE_PIN A0
-
-#define TASTATUR_PIN A2
-#define TASTE_OFF 0
-#define TASTE_ON 1
-
-#define BATT_PIN A6
 
 uint8_t debouncecheck = 0;
 
@@ -90,9 +70,25 @@ uint16_t throttlesekunden = 0;
 
 #define MINDIFF 4
 
+elapsedMillis              sincelastpaket = 0;
+IntervalTimer              servoimpulsTimer;
+IntervalTimer              kanalimpulsTimer;
+uint8_t                    slaveimpulscounter = 0;
+volatile uint8_t           servoindex = 0;
+volatile uint16_t          slaveimpulstimearray[NUM_SERVOS] = {};
+
+// Decoder
+uint16_t Slavechannelarray[NUM_SERVOS] = {};
+uint16_t Slavechannelmittearray[NUM_SERVOS] = {};
+
+volatile uint8_t slaveindex = 0;
+volatile uint32_t last = 0;
+
+
+
+
 uint16_t schritt = 32;
 
-uint8_t PCB_BOARD = BOARD_TEENSY; // Teensy
 
 uint16_t impulstimearray[NUM_SERVOS] = {};
 
@@ -381,6 +377,30 @@ volatile byte channel = 0;
 const byte maxChannels = 8;
 // volatile unsigned int ppmValues[maxChannels];
 
+
+void slaveISR() 
+{
+    uint32_t now = micros();
+    uint32_t dur = now - last;
+    last = now;
+
+    if (dur > 3000) 
+    { 
+      slaveindex = 0;                 // Sync → Frame neu
+    } 
+    else if (slaveindex < NUM_SERVOS) 
+    {
+      if ((calibstatus & (1 << CALIB_START)))
+      {
+         Slavechannelmittearray[slaveindex] = dur;
+      }
+        //uint8_t red = map(dur,1000,2000,0,255);
+        uint8_t red = Border_Mapvar255_raw( dur, 1000, Slavechannelmittearray[slaveindex], 2000, false);
+        Slavechannelarray[slaveindex] = red;   // Kanalwert speichern
+        slaveindex++;
+    }
+}
+
 void ppmISR()
 {
    unsigned long now = micros();
@@ -398,7 +418,7 @@ void ppmISR()
    else if (channel < maxChannels)
    {
 
-      potwertarray[channel] = pulseLength;
+      Slavechannelarray[channel] = pulseLength;
       channel++;
    }
 }
@@ -541,6 +561,8 @@ void eepromread()
          // Serial.println(eh);
       }
 
+      
+
    } // for i
    // Serial.print("\n");
 }
@@ -628,6 +650,10 @@ void eepromwrite(void)
       _delay_ms(1);
       EEPROM.update(2 * (i + EEPROMEXPOSETTINGS), (kanalsettingarray[curr_model][i][2])); // expo
       _delay_ms(1);
+
+      EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M), Slavechannelmittearray[i]); // slave mitte
+      _delay_ms(1);
+
 
       // EEPROM.update(2*(i + EEPROMLEVELSETTINGS),(47+i)); // level
       // EEPROM.update(2*(i + EEPROMEXPOSETTINGS),(63+i )); // expo
@@ -732,6 +758,11 @@ float getAltitude(float press, float temp)
 {
    return ((pow((seaLevelPressure / press), 1.0 / 5.257) - 1.0) * (temp + 273.15)) / 0.0065;
 }
+
+
+
+
+
 
 uint8_t Joystick_Tastenwahl_33_6(uint16_t Tastaturwert)
 {
@@ -920,9 +951,11 @@ void setCalib(void)
 {
 }
 
+
+
 void setup()
 {
-    //anzeigestatus = ANZEIGE_POT;
+    anzeigestatus = ANZEIGE_SLAVE;
 
    uint8_t ee[16];
    delay(50);
@@ -946,20 +979,20 @@ void setup()
 
    Serial.begin(9600);
 
-   // PPM decode
+   // PPM decode, von RC_22
    pinMode(PPM_DIR_PIN, OUTPUT);
    pinMode(PPM_DATA_PIN, OUTPUT);
    digitalWrite(PPM_DATA_PIN, LOW);
 
-   IntervalTimer servoimpulsTimer;
-   IntervalTimer kanalimpulsTimer;
+   
+
 
    for (int i = 0; i < 4; i++)
    {
       pinMode(adcpinarrayTeensy[i], INPUT);
    }
 
-   // attachInterrupt(digitalPinToInterrupt(PPM_PIN), ppmISR, RISING);
+    attachInterrupt(digitalPinToInterrupt(PPM_DATA_PIN), slaveISR, RISING);
 
    pinMode(BUZZPIN, OUTPUT);
    digitalWrite(BUZZPIN, LOW);
@@ -982,6 +1015,9 @@ void setup()
     */
    // Serial.println(__DATE__);
    // Serial.println(__TIME__);
+
+   pinMode(PPM_DATA_PIN, INPUT_PULLDOWN);
+   attachInterrupt(digitalPinToInterrupt(PPM_DATA_PIN), slaveISR, RISING);
 
    printeeprom(160);
 
@@ -1050,17 +1086,8 @@ void setup()
 
    ResetData();
 
-   // RC_22
-   // for (uint16_t i=0;i<NUM_SERVOS;i++)
-   {
-      // adcpinarray[i] = 0xFF;
-   }
-   /*
-    adcpinarray[0] = PITCH_PIN;
-    adcpinarray[1] = YAW_PIN;
-    adcpinarray[2] = ROLL_PIN;
-    adcpinarray[3] = THROTTLE_PIN;
-    */
+   
+   
 
    Serial.print("servomitte\n");
    for (uint8_t i = 0; i < NUM_SERVOS; i++)
@@ -1097,9 +1124,7 @@ void setup()
    } // for NUM_SERVOS
 
    // Timer starten
-   // setupTimer();
-
-   // setupPPM();
+ 
 
    setupDebounce();
 
@@ -1172,6 +1197,58 @@ int Border_Map10(int val, int lower, int middle, int upper, bool reverse)
    else
       val = map(val, middle, upper, 255, 512); // normieren auf 255 - 512
    return (reverse ? 512 - val : val);
+}
+
+int Border_Mapvar255_raw( int val, int lower, int middle, int upper, bool reverse)
+{
+   val = constrain(val, lower, upper); // Grenzen einhalten
+   uint8_t levelwerta = 0; //levelwertarray[servo] & 0x07;
+   uint8_t levelwertb = 0; //(levelwertarray[servo] & 0x70) >> 4;
+
+   uint8_t expowerta = 0; //expowertarray[servo] & 0x07;
+   uint8_t expowertb = 0; //(expowertarray[servo] & 0x70) >> 4;
+
+   // levelwerta = 0;
+   // levelwertb = 0;
+   // expowerta = 0;
+   // expowertb = 0;
+
+   if (val < middle)
+   {
+
+      val = map(val, lower, middle, 0, 127); // normieren auf 0-127
+      // intdiff = val;
+      intdiff = (127 - val); // Abweichung von mitte,
+      // levelintraw = intdiff;
+      // diffa = map(intdiff,0,(middle - lower), 0,512);
+      diffa = intdiff;
+
+      expoint = expoarray8[expowerta][diffa];
+      levelint = expoint * (8 - levelwerta);
+      levelint /= 8;
+      levelintcheck = 127 + levelint;
+      levelint = 127 + levelint;
+   }
+   else
+   {
+      val = map(val, middle, upper, 128, 255); // normieren auf 128 - 255
+      // intdiff = val;
+
+      intdiff = (val - 127); // Abweichung von mitte,
+      // diffb = map(intdiff,0,(upper - middle),0,512);
+      diffb = intdiff;
+      if (diffb >= 127)
+      {
+         diffb = 127;
+      }
+      expoint = expoarray8[expowertb][diffb];
+      levelint = expoint * (8 - levelwertb);
+      levelint /= 8;
+      levelintcheck = 127 - levelint;
+      levelint = 127 - levelint;
+   }
+
+   return (reverse ? 255 - levelint : levelint);
 }
 
 int Border_Mapvar255(uint8_t servo, int val, int lower, int middle, int upper, bool reverse)
@@ -2237,6 +2314,19 @@ void loop()
 
          case ANZEIGE_TAST:
          {
+         }
+         break;
+
+         case ANZEIGE_SLAVE:
+         {
+            Serial.print("Slavechannelarray: \t");
+            for(uint8_t i=0;i<NUM_SERVOS;i++)
+            {
+               Serial.print("\t");
+
+               Serial.print(Slavechannelarray[i]);
+            }
+            Serial.print("\n");
          }
          break;
 
