@@ -225,9 +225,12 @@ float quot = (ppmhi - ppmlo) / (pothi - potlo);
 float expoquot = (ppmhi - ppmlo) / 2 / 0x200; // umrechnen der max expo (512) auf PPM
 // uint8_t sinarray[127] = {127,133,139,145,151,156,162,168,173,179,184,189,194,199,204,208,212,216,220,224,227,230,233,236,238,240,242,244,245,246,247,247,247,247,246,245,244,243,241,239,237,235,232,229,226,222,218,214,210,206,201,197,192,187,181,176,170,165,159,153,148,142,136,130,124,118,112,106,100,95,89,83,78,73,67,62,57,53,48,44,40,36,32,28,25,22,19,17,15,13,11,10,9,8,7,7,7,7,8,9,10,12,14,16,18,21,24,27,30,34,38,42,46,50,55,60,65,70,75,81,86,92,98,103,109,115,121};
 //  MasterSlave
-uint8_t masterslavestatus = 0;
+volatile uint8_t masterslavestatus = 0;
 #define MASTER 0
 #define SLAVE 1
+#define MASTERSLAVECHANGE  7
+
+volatile uint8_t slavecounter = 0; // counter beim umschalten
 
 volatile uint8_t currentChannel = 0;
 volatile uint8_t pausecounter = 0;
@@ -377,6 +380,16 @@ volatile byte channel = 0;
 const byte maxChannels = 8;
 // volatile unsigned int ppmValues[maxChannels];
 
+void slaveplugISR()
+{
+  // Serial.print("slaveplugISR status: ");
+  // Serial.print(masterslavestatus);
+  if(!(masterslavestatus & (1<<MASTERSLAVECHANGE)))
+  {
+   masterslavestatus |= (1<<MASTERSLAVECHANGE);
+  }
+  
+}
 
 void slaveISR() 
 {
@@ -384,9 +397,10 @@ void slaveISR()
     uint32_t dur = now - last;
     last = now;
 
-    if (dur > 3000) 
+    if (dur > 2500) 
     { 
-      slaveindex = 0;                 // Sync → Frame neu
+      slaveindex = 0; 
+      OSZIA_LO();                // Sync → Frame neu
     } 
     else if (slaveindex < NUM_SERVOS) 
     {
@@ -394,34 +408,16 @@ void slaveISR()
       {
          Slavechannelmittearray[slaveindex] = dur;
       }
+      OSZIA_HI();  
         //uint8_t red = map(dur,1000,2000,0,255);
-        uint8_t red = Border_Mapvar255_raw( dur, 1000, Slavechannelmittearray[slaveindex], 2000, false);
-        Slavechannelarray[slaveindex] = red;   // Kanalwert speichern
-        slaveindex++;
+         //uint8_t red = Border_Mapvar255_raw( dur, 1000, Slavechannelmittearray[slaveindex], 2000, false);
+
+        uint8_t red = Border_Mapvar255_raw( dur, 1000, 1500, 2000, false);
+        Slavechannelarray[slaveindex++] = dur;   // Kanalwert speichern
+       // slaveindex++;
     }
 }
 
-void ppmISR()
-{
-   unsigned long now = micros();
-   pulseLength = now - lastTime;
-   lastTime = now;
-
-   if (pulseLength > 3000)
-   {
-      digitalWrite(PPM_DIR_PIN, HIGH);
-      // Sync-Pause erkannt: neues Frame beginnt
-      channel = 0;
-      // digitalWrite(PPM_DIR_PIN, !(digitalRead(PPM_DIR_PIN)));
-      digitalWrite(PPM_DIR_PIN, LOW);
-   }
-   else if (channel < maxChannels)
-   {
-
-      Slavechannelarray[channel] = pulseLength;
-      channel++;
-   }
-}
 
 void updatemitte(void)
 {
@@ -502,6 +498,19 @@ void printeeprom(uint8_t zeilen)
    // Serial.print("\t");
    // Serial.print(eepromyaw);
    // Serial.print("\n");
+   eepromyawlo = EEPROM.read(2 * (0 + EEPROMINDEX_O));
+   eepromyawhi = EEPROM.read(2 * (0 + EEPROMINDEX_O) + 1);
+   eepromyaw = (eepromyawhi << 8) | eepromyawlo;
+
+   // Serial.print("eepromyaw O: \t");
+   // Serial.print(eepromyawlo);
+   // Serial.print("\t");
+   // Serial.print(eepromyawhi);
+   // Serial.print("\t");
+   // Serial.print(eepromyaw);
+   // Serial.print("\n");
+
+
 }
 
 void eepromread()
@@ -551,6 +560,17 @@ void eepromread()
       eh &= 0x03;
       kanalsettingarray[0][i][2] = eh; // modell 0
 
+      el = EEPROM.read(2 * (i + EEPROMSLAVEINDEX_M)); // LO
+      eh = EEPROM.read(2 * (i + EEPROMSLAVEINDEX_M + 1)); // HI
+      uint16_t slavemitte = (eh << 8) | el;
+       Serial.print("read slavemitte:\t");     
+       Serial.print(slavemitte);
+       Serial.print(" *\n");
+
+      Slavechannelmittearray[i] = (eh << 8) | el;
+
+
+
       if (i == 0)
       {
          // Serial.print("\n");
@@ -561,7 +581,7 @@ void eepromread()
          // Serial.println(eh);
       }
 
-      
+
 
    } // for i
    // Serial.print("\n");
@@ -587,6 +607,56 @@ void cleargrenzen(void)
       potgrenzearray[i][1] = 127;
 
    } // for i
+}
+
+
+void slaveeepromwrite(void)
+{
+
+   Serial.print("slaveeepromwrite\n");
+   uint8_t el = 0;
+   uint8_t eh = 0;
+   uint16_t ee = 0;
+   for (uint8_t i = 0; i < NUM_SERVOS; i++)
+   {
+      el = 1555 & 0x00FF;
+      eh = (1555 & 0xFF00) >> 8;
+      ee = (eh << 8) | el;
+      Serial.print(el);
+       Serial.print("\t");
+       Serial.print(eh);
+       Serial.print("\t");
+       Serial.print(ee);
+       Serial.print("\t*\t");
+
+      EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M), Slavechannelarray[i] & 0x00FF); // slave mitte LO
+       _delay_ms(10);
+      EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M) +1, ((Slavechannelarray[i] & 0xFF00) >> 8)); // slave mitte HI
+      _delay_ms(10);
+
+
+   }
+   // Kontrolle
+   
+   Serial.print("\nslaveeepromwrite kontrolle\n");
+   for (uint8_t i = 0; i < NUM_SERVOS; i++)
+   {
+      el = EEPROM.read(2 * (i + EEPROMSLAVEINDEX_M)); // LO
+      _delay_ms(10);
+      eh = EEPROM.read(2 * (i + EEPROMSLAVEINDEX_M)  + 1); // HI
+      _delay_ms(10);
+      uint16_t slavemitte = (eh << 8) | el;
+       Serial.print("readkontrolle slavemitte:\t");     
+       Serial.print(el);
+       Serial.print("\t");
+       Serial.print(eh);
+       Serial.print("\t");
+       Serial.print(slavemitte);
+       Serial.print(" *\n");
+
+      Slavechannelmittearray[i] = (eh << 8) | el;
+   }
+   Serial.print("slaveeepromwrite end\n");
 }
 
 void eepromwrite(void)
@@ -651,7 +721,17 @@ void eepromwrite(void)
       EEPROM.update(2 * (i + EEPROMEXPOSETTINGS), (kanalsettingarray[curr_model][i][2])); // expo
       _delay_ms(1);
 
-      EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M), Slavechannelmittearray[i]); // slave mitte
+      Serial.print("write Slavechannelmittearray:\t");
+      Serial.print(Slavechannelmittearray[i]);
+      Serial.print(" *\n");
+      EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M), Slavechannelmittearray[i] & 0x00FF); // slave mitte LO
+      //EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M), 1555 & 0x00FF); // slave mitte LO
+      
+      
+      _delay_ms(1);
+      EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M) +1, ((Slavechannelmittearray[i] & 0xFF00) >> 8)); // slave mitte HI
+      //EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M ) + 1, ((1555 & 0xFF00) >> 8)); // slave mitte HI
+
       _delay_ms(1);
 
 
@@ -957,6 +1037,7 @@ void setup()
 {
     anzeigestatus = ANZEIGE_SLAVE;
 
+   masterslavestatus |= (1<<MASTER);
    uint8_t ee[16];
    delay(50);
    for (uint8_t i = 0; i < 64; i++)
@@ -980,7 +1061,8 @@ void setup()
    Serial.begin(9600);
 
    // PPM decode, von RC_22
-   pinMode(PPM_DIR_PIN, OUTPUT);
+   pinMode(PPM_DIR_PIN,  INPUT_PULLUP);
+
    pinMode(PPM_DATA_PIN, OUTPUT);
    digitalWrite(PPM_DATA_PIN, LOW);
 
@@ -993,6 +1075,8 @@ void setup()
    }
 
     attachInterrupt(digitalPinToInterrupt(PPM_DATA_PIN), slaveISR, RISING);
+
+    //attachInterrupt(digitalPinToInterrupt(PPM_DIR_PIN), slaveplugISR, CHANGE);
 
    pinMode(BUZZPIN, OUTPUT);
    digitalWrite(BUZZPIN, LOW);
@@ -1019,7 +1103,7 @@ void setup()
    pinMode(PPM_DATA_PIN, INPUT_PULLDOWN);
    attachInterrupt(digitalPinToInterrupt(PPM_DATA_PIN), slaveISR, RISING);
 
-   printeeprom(160);
+   printeeprom(240);
 
    eepromread();
 
@@ -1032,9 +1116,9 @@ void setup()
    pinMode(TASTATUR_PIN, INPUT);
 
    // pinMode(EEPROMTASTE,INPUT_PULLUP);
-   eepromtaste.attach(EEPROMTASTE, INPUT_PULLUP);
-   eepromtaste.interval(5);
-   eepromtaste.setPressedState(LOW);
+   //eepromtaste.attach(EEPROMTASTE, INPUT_PULLUP);
+   //eepromtaste.interval(5);
+   //eepromtaste.setPressedState(LOW);
 
    // digitalWrite(EEPROMTASTE, HIGH);
 
@@ -1357,6 +1441,38 @@ void loop()
 
    if (zeitintervall > 500)
    {
+      //slaveISR;
+      // Einstellung Master/Slave
+      if(masterslavestatus & (1<<MASTERSLAVECHANGE))
+      {
+         //Serial.println(slavecounter&0x07);
+         slavecounter++;
+         if(slavecounter > 2)
+         {
+            if(masterslavestatus & (1<<MASTER))
+            {
+               if(digitalRead(PPM_DIR_PIN) == 0) // umschalten auf Slave
+               {
+                  masterslavestatus &= ~(1<<MASTER);
+                  masterslavestatus |= (1<<SLAVE);
+                  
+               }
+            }
+            else if (digitalRead(PPM_DIR_PIN) == 1) // umschalten auf Master
+               {
+                  masterslavestatus &= ~(1<<SLAVE);
+                  masterslavestatus |= (1<<MASTER);
+               }
+            masterslavestatus &= ~(1<<MASTERSLAVECHANGE);
+
+            slavecounter = 0;
+         }
+
+      }
+      
+
+
+      //
       zeitintervall = 0;
       digitalWrite(LOOPLED, !digitalRead(LOOPLED));
 
@@ -1413,6 +1529,11 @@ void loop()
          // Serial.print("T 1");
          switch (curr_screen)
          {
+            case 0:
+            {
+               slaveeepromwrite();
+
+            }break;
          case 1: // MENUSCREEN
          {
             curr_screen = 5;
@@ -1617,7 +1738,7 @@ void loop()
          {
             // EEPROM lesen
             eepromread();
-            printeeprom(160);
+            printeeprom(240);
          }
          break;
 
@@ -1788,10 +1909,10 @@ void loop()
                         calibstatus &= ~(1 << CALIB_START); // calib beenden
 
                         Serial.println(" vor write: ");
-                         printeeprom(160);
+                         printeeprom(240);
                          eepromwrite();
                         Serial.println(" nach write: ");
-                         printeeprom(160);
+                         printeeprom(240);
                      }
 
                      updateModusScreen();
@@ -2198,10 +2319,10 @@ void loop()
             {
                // write to eeprom
                Serial.println(" vor write: ");
-               printeeprom(160);
+               printeeprom(240);
                eepromwrite();
                Serial.println(" nach write: ");
-               printeeprom(160);
+               printeeprom(240);
                savestatus = CANCEL;
             }
             break;
@@ -2244,7 +2365,8 @@ void loop()
       if (loopcounter1 > BLINKRATE)
       {
          loopcounter1 = 0;
-
+         Serial.print("\tmasterslavestatus: ");
+         Serial.println((masterslavestatus & 0x03));
          if (TEST)
          {
             Serial.print("ACK erhalten: ");
@@ -2319,14 +2441,25 @@ void loop()
 
          case ANZEIGE_SLAVE:
          {
-            Serial.print("Slavechannelarray: \t");
-            for(uint8_t i=0;i<NUM_SERVOS;i++)
+            //if(masterslavestatus & (1<<SLAVE))
             {
-               Serial.print("\t");
+               Serial.print("ANZEIGE_SLAVE Slavechannelarray: \t");
+               for(uint8_t i=0;i<NUM_SERVOS;i++)
+               {
+                  Serial.print("\t");
 
-               Serial.print(Slavechannelarray[i]);
+                  Serial.print(Slavechannelarray[i]);
+               }
+               Serial.print("\t");
+               for(uint8_t i=0;i<NUM_SERVOS;i++)
+               {
+                  Serial.print("\t");
+
+                  Serial.print(Slavechannelmittearray[i]);
+               }
+
+               Serial.print("\n");
             }
-            Serial.print("\n");
          }
          break;
 
@@ -2810,7 +2943,7 @@ void loop()
 
       data.aux1 = digitalRead(5); // CH5
       data.aux2 = digitalRead(7); // CH6
-      OSZIA_LO();
+      //OSZIA_LO();
       if (radio.write(&data, sizeof(data)))
       {
          radiocounter++;
@@ -2852,6 +2985,6 @@ void loop()
          digitalWrite(BUZZPIN, !(digitalRead(BUZZPIN)));
          errcounter++;
       }
-      OSZIA_HI();
+      //OSZIA_HI();
    }
 }

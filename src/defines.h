@@ -79,7 +79,7 @@
 #define EEPROMLEVELSETTINGS 0x40
 #define EEPROMEXPOSETTINGS 0x48
 
-#define EEPROMSLAVEINDEX_M 0x64
+#define EEPROMSLAVEINDEX_M 0x56
 
 // defines for PINS
 // links
