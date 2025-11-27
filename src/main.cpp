@@ -21,7 +21,7 @@
 
 const uint64_t pipeOut = 0xABCDABCD71LL; // NOTE: The address in the Transmitter and Receiver code must be the same "0xABCDABCD71LL" | Verici ve Alıcı kodundaki adres aynı olmalıdır
 
-int Border_Mapvar255_raw( int val, int lower, int middle, int upper, bool reverse);
+int Border_Mapvar255_slave(int val, int lower, int middle, int upper, bool reverse);
 
 // extern "C"
 
@@ -45,10 +45,7 @@ RF24 radio(CE_PIN, CSN_PIN);
 
 #define EEPROMTASTE 5
 
-
-
 #define BLINKRATE 0x4FF
-
 
 uint8_t debouncecheck = 0;
 
@@ -70,12 +67,12 @@ uint16_t throttlesekunden = 0;
 
 #define MINDIFF 4
 
-elapsedMillis              sincelastpaket = 0;
-IntervalTimer              servoimpulsTimer;
-IntervalTimer              kanalimpulsTimer;
-uint8_t                    slaveimpulscounter = 0;
-volatile uint8_t           servoindex = 0;
-volatile uint16_t          slaveimpulstimearray[NUM_SERVOS] = {};
+elapsedMillis sincelastpaket = 0;
+IntervalTimer servoimpulsTimer;
+IntervalTimer kanalimpulsTimer;
+uint8_t slaveimpulscounter = 0;
+volatile uint8_t servoindex = 0;
+volatile uint16_t slaveimpulstimearray[NUM_SERVOS] = {};
 
 // Decoder
 uint16_t Slavechannelarray[NUM_SERVOS] = {};
@@ -84,11 +81,7 @@ uint16_t Slavechannelmittearray[NUM_SERVOS] = {};
 volatile uint8_t slaveindex = 0;
 volatile uint32_t last = 0;
 
-
-
-
 uint16_t schritt = 32;
-
 
 uint16_t impulstimearray[NUM_SERVOS] = {};
 
@@ -99,19 +92,22 @@ uint8_t kanalsettingarray[ANZAHLMODELLE][NUM_SERVOS][KANALSETTINGBREITE] = {};
 uint16_t servomittearray[NUM_SERVOS] = {}; // Werte fuer Mitte
 
 uint8_t levelwert = 0;
-// uint8_t levelwerta = 0;
-// uint8_t levelwertb = 0;
+ uint8_t levelwerta = 0;
+ uint8_t levelwertb = 0;
 
 uint8_t levelwertarray[NUM_SERVOS] = {}; // leelwert pro servo
 
-uint8_t levelwertayaw = 0;
-uint8_t levelwertbyaw = 0;
+uint8_t levelwertaraw = 0;
+uint8_t levelwertbraw = 0;
 
 uint16_t potwertyaw = 0;
 
 uint8_t expowert = 0;
-// uint8_t expowerta = 0;
-// uint8_t expowertb = 0;
+ uint8_t expowerta = 0;
+ uint8_t expowertb = 0;
+
+  uint8_t expowertaraw = 0;
+ uint8_t expowertbraw = 0;
 
 uint8_t expowertarray[NUM_SERVOS] = {}; // expowert pro Servo
 
@@ -228,7 +224,7 @@ float expoquot = (ppmhi - ppmlo) / 2 / 0x200; // umrechnen der max expo (512) au
 volatile uint8_t masterslavestatus = 0;
 #define MASTER 0
 #define SLAVE 1
-#define MASTERSLAVECHANGE  7
+#define MASTERSLAVECHANGE 7
 
 volatile uint8_t slavecounter = 0; // counter beim umschalten
 
@@ -382,42 +378,39 @@ const byte maxChannels = 8;
 
 void slaveplugISR()
 {
-  // Serial.print("slaveplugISR status: ");
-  // Serial.print(masterslavestatus);
-  if(!(masterslavestatus & (1<<MASTERSLAVECHANGE)))
-  {
-   masterslavestatus |= (1<<MASTERSLAVECHANGE);
-  }
-  
+   // Serial.print("slaveplugISR status: ");
+   // Serial.print(masterslavestatus);
+   if (!(masterslavestatus & (1 << MASTERSLAVECHANGE)))
+   {
+      masterslavestatus |= (1 << MASTERSLAVECHANGE);
+   }
 }
 
-void slaveISR() 
+void slaveISR()
 {
-    uint32_t now = micros();
-    uint32_t dur = now - last;
-    last = now;
+   uint32_t now = micros();
+   uint32_t dur = now - last;
+   last = now;
 
-    if (dur > 2500) 
-    { 
-      slaveindex = 0; 
-      OSZIA_LO();                // Sync → Frame neu
-    } 
-    else if (slaveindex < NUM_SERVOS) 
-    {
+   if (dur > 2500)
+   {
+      slaveindex = 0;
+      OSZIA_LO(); // Sync → Frame neu
+   }
+   else if (slaveindex < NUM_SERVOS)
+   {
       if ((calibstatus & (1 << CALIB_START)))
       {
          Slavechannelmittearray[slaveindex] = dur;
       }
-      OSZIA_HI();  
-        //uint8_t red = map(dur,1000,2000,0,255);
-         //uint8_t red = Border_Mapvar255_raw( dur, 1000, Slavechannelmittearray[slaveindex], 2000, false);
+      OSZIA_HI();
+      // red mit mitte von slave
+      uint8_t red = Border_Mapvar255_slave(dur, 1000, Slavechannelmittearray[slaveindex], 2000, false);
 
-        uint8_t red = Border_Mapvar255_raw( dur, 1000, 1500, 2000, false);
-        Slavechannelarray[slaveindex++] = dur;   // Kanalwert speichern
-       // slaveindex++;
-    }
+      Slavechannelarray[slaveindex++] = red; // Kanalwert speichern
+      // slaveindex++;
+   }
 }
-
 
 void updatemitte(void)
 {
@@ -509,8 +502,6 @@ void printeeprom(uint8_t zeilen)
    // Serial.print("\t");
    // Serial.print(eepromyaw);
    // Serial.print("\n");
-
-
 }
 
 void eepromread()
@@ -553,23 +544,21 @@ void eepromread()
       potgrenzearray[i][0] = (eh << 8) | el;
 
       el = EEPROM.read(2 * (i + EEPROMLEVELSETTINGS));
-      el &= 0x03;
+      //el &= 0x03;
       kanalsettingarray[0][i][1] = el; // modell 0
 
       eh = EEPROM.read(2 * (i + EEPROMEXPOSETTINGS));
-      eh &= 0x03;
+      //eh &= 0x03;
       kanalsettingarray[0][i][2] = eh; // modell 0
 
-      el = EEPROM.read(2 * (i + EEPROMSLAVEINDEX_M)); // LO
-      eh = EEPROM.read(2 * (i + EEPROMSLAVEINDEX_M + 1)); // HI
+      el = EEPROM.read(2 * (i + EEPROMSLAVEINDEX_M));     // LO
+      eh = EEPROM.read(2 * (i + EEPROMSLAVEINDEX_M) + 1); // HI
       uint16_t slavemitte = (eh << 8) | el;
-       Serial.print("read slavemitte:\t");     
-       Serial.print(slavemitte);
-       Serial.print(" *\n");
+      Serial.print("read slavemitte:\t");
+      Serial.print(slavemitte);
+      Serial.print(" *\n");
 
       Slavechannelmittearray[i] = (eh << 8) | el;
-
-
 
       if (i == 0)
       {
@@ -580,8 +569,6 @@ void eepromread()
          // Serial.print("expo\t");
          // Serial.println(eh);
       }
-
-
 
    } // for i
    // Serial.print("\n");
@@ -609,7 +596,6 @@ void cleargrenzen(void)
    } // for i
 }
 
-
 void slaveeepromwrite(void)
 {
 
@@ -623,36 +609,34 @@ void slaveeepromwrite(void)
       eh = (1555 & 0xFF00) >> 8;
       ee = (eh << 8) | el;
       Serial.print(el);
-       Serial.print("\t");
-       Serial.print(eh);
-       Serial.print("\t");
-       Serial.print(ee);
-       Serial.print("\t*\t");
+      Serial.print("\t");
+      Serial.print(eh);
+      Serial.print("\t");
+      Serial.print(ee);
+      Serial.print("\t*\t");
 
       EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M), Slavechannelarray[i] & 0x00FF); // slave mitte LO
-       _delay_ms(10);
-      EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M) +1, ((Slavechannelarray[i] & 0xFF00) >> 8)); // slave mitte HI
       _delay_ms(10);
-
-
+      EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M) + 1, ((Slavechannelarray[i] & 0xFF00) >> 8)); // slave mitte HI
+      _delay_ms(10);
    }
    // Kontrolle
-   
+
    Serial.print("\nslaveeepromwrite kontrolle\n");
    for (uint8_t i = 0; i < NUM_SERVOS; i++)
    {
       el = EEPROM.read(2 * (i + EEPROMSLAVEINDEX_M)); // LO
       _delay_ms(10);
-      eh = EEPROM.read(2 * (i + EEPROMSLAVEINDEX_M)  + 1); // HI
+      eh = EEPROM.read(2 * (i + EEPROMSLAVEINDEX_M) + 1); // HI
       _delay_ms(10);
       uint16_t slavemitte = (eh << 8) | el;
-       Serial.print("readkontrolle slavemitte:\t");     
-       Serial.print(el);
-       Serial.print("\t");
-       Serial.print(eh);
-       Serial.print("\t");
-       Serial.print(slavemitte);
-       Serial.print(" *\n");
+      Serial.print("readkontrolle slavemitte:\t");
+      Serial.print(el);
+      Serial.print("\t");
+      Serial.print(eh);
+      Serial.print("\t");
+      Serial.print(slavemitte);
+      Serial.print(" *\n");
 
       Slavechannelmittearray[i] = (eh << 8) | el;
    }
@@ -665,6 +649,9 @@ void eepromwrite(void)
    Serial.print("eepromwrite\n");
    for (uint8_t i = 0; i < NUM_SERVOS; i++)
    {
+      uint8_t adrlo = 0;
+      uint8_t adrhi = 0;
+      /*
       Serial.print("potgrenzearray raw i:\t");
       Serial.print(i);
       Serial.print("\t");
@@ -686,7 +673,7 @@ void eepromwrite(void)
       Serial.print("adresse H:\t");
       uint8_t addresseU_HI = 2 * (i + EEPROMINDEX_U) + 1;
       Serial.print(addresseU_HI);
-
+      */
       Serial.print(" *\t");
       Serial.print("level:\t");
       Serial.print(kanalsettingarray[curr_model][i][1]);
@@ -695,6 +682,7 @@ void eepromwrite(void)
       Serial.print(kanalsettingarray[curr_model][i][2]);
 
       Serial.print("\n");
+
 
       EEPROM.update(2 * (i + EEPROMINDEX_U), (potgrenzearray[i][1] & 0x00FF)); // lo byte
       _delay_ms(1);
@@ -710,30 +698,68 @@ void eepromwrite(void)
       EEPROM.update(2 * (i + EEPROMINDEX_M) + 1, ((servomittearray[i] & 0xFF00) >> 8)); // hi byte
       _delay_ms(1);
 
-      for (uint8_t i = 0; i < 8; i++)
-      {
-         //     EEPROM.write(2*(i + EEPROMLEVELSETTINGS)+i,255); // lo byte
-         //    EEPROM.write(2*(i + EEPROMEXPOSETTINGS)+i,255);
-      }
-
       EEPROM.update(2 * (i + EEPROMLEVELSETTINGS), (kanalsettingarray[curr_model][i][1])); // level
       _delay_ms(1);
+      Serial.print("write level kanalsettingarray 1:\t");
+      adrlo = 2 * (i + EEPROMLEVELSETTINGS);
+      adrhi = 2 * (i + EEPROMLEVELSETTINGS) + 1;
+      //Serial.print("\t");
+      //Serial.print("curr_model:\t");
+      //Serial.print(curr_model);
+      Serial.print("\t");
+      Serial.print("adresse lo:\t");
+      Serial.print(adrlo);
+      Serial.print("\t");
+      Serial.print("adressse hi:\t");
+      Serial.print(adrhi);
+      Serial.print("\t");
+
+      Serial.print(kanalsettingarray[curr_model][i][1]);
+      Serial.print(" \ttest\t");
+
+      uint8_t levello = EEPROM.read(adrlo);
+      uint8_t levelhi = EEPROM.read(adrhi);
+
+
+
+
+
+
+
+      Serial.print(" *\t");
+      Serial.print("write expo kanalsettingarray 2:\t");
+      Serial.print(kanalsettingarray[curr_model][i][2]);
+      Serial.print("\t");
+
       EEPROM.update(2 * (i + EEPROMEXPOSETTINGS), (kanalsettingarray[curr_model][i][2])); // expo
       _delay_ms(1);
 
+      adrlo = 2 * (i + EEPROMSLAVEINDEX_M);
+      adrhi = 2 * (i + EEPROMSLAVEINDEX_M) + 1;
+
+      /*
       Serial.print("write Slavechannelmittearray:\t");
       Serial.print(Slavechannelmittearray[i]);
+      Serial.print("\t");
+      Serial.print("adresse lo:\t");
+      Serial.print(adrlo);
+      Serial.print("\t");
+      Serial.print("adressse hi:\t");
+      Serial.print(adrhi);
+      Serial.print("\t");
+      Serial.print("data:\t");
+      Serial.print(Slavechannelmittearray[i]);
+      */
+
       Serial.print(" *\n");
       EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M), Slavechannelmittearray[i] & 0x00FF); // slave mitte LO
-      //EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M), 1555 & 0x00FF); // slave mitte LO
-      
-      
-      _delay_ms(1);
-      EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M) +1, ((Slavechannelmittearray[i] & 0xFF00) >> 8)); // slave mitte HI
-      //EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M ) + 1, ((1555 & 0xFF00) >> 8)); // slave mitte HI
+      // EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M), 1555 & 0x00FF); // slave mitte LO
 
       _delay_ms(1);
+      EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M) + 1, ((Slavechannelmittearray[i] & 0xFF00) >> 8)); // slave mitte HI
+      // EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M ) + 1, ((1555 & 0xFF00) >> 8)); // slave mitte HI
 
+      _delay_ms(1);
 
       // EEPROM.update(2*(i + EEPROMLEVELSETTINGS),(47+i)); // level
       // EEPROM.update(2*(i + EEPROMEXPOSETTINGS),(63+i )); // expo
@@ -760,7 +786,7 @@ void eepromwrite(void)
        */
    }
 
-    Serial.print("eepromwrite end\n");
+   Serial.print("eepromwrite end\n");
 }
 
 uint8_t Joystick_Tastenwahl_33_2(uint16_t Tastaturwert)
@@ -838,11 +864,6 @@ float getAltitude(float press, float temp)
 {
    return ((pow((seaLevelPressure / press), 1.0 / 5.257) - 1.0) * (temp + 273.15)) / 0.0065;
 }
-
-
-
-
-
 
 uint8_t Joystick_Tastenwahl_33_6(uint16_t Tastaturwert)
 {
@@ -1031,13 +1052,11 @@ void setCalib(void)
 {
 }
 
-
-
 void setup()
 {
-    anzeigestatus = ANZEIGE_SLAVE;
+   anzeigestatus = ANZEIGE_LEVEL;
 
-   masterslavestatus |= (1<<MASTER);
+   masterslavestatus |= (1 << MASTER);
    uint8_t ee[16];
    delay(50);
    for (uint8_t i = 0; i < 64; i++)
@@ -1061,22 +1080,19 @@ void setup()
    Serial.begin(9600);
 
    // PPM decode, von RC_22
-   pinMode(PPM_DIR_PIN,  INPUT_PULLUP);
+   pinMode(PPM_DIR_PIN, INPUT_PULLUP);
 
    pinMode(PPM_DATA_PIN, OUTPUT);
    digitalWrite(PPM_DATA_PIN, LOW);
-
-   
-
 
    for (int i = 0; i < 4; i++)
    {
       pinMode(adcpinarrayTeensy[i], INPUT);
    }
 
-    attachInterrupt(digitalPinToInterrupt(PPM_DATA_PIN), slaveISR, RISING);
+   attachInterrupt(digitalPinToInterrupt(PPM_DATA_PIN), slaveISR, RISING);
 
-    //attachInterrupt(digitalPinToInterrupt(PPM_DIR_PIN), slaveplugISR, CHANGE);
+   // attachInterrupt(digitalPinToInterrupt(PPM_DIR_PIN), slaveplugISR, CHANGE);
 
    pinMode(BUZZPIN, OUTPUT);
    digitalWrite(BUZZPIN, LOW);
@@ -1116,9 +1132,9 @@ void setup()
    pinMode(TASTATUR_PIN, INPUT);
 
    // pinMode(EEPROMTASTE,INPUT_PULLUP);
-   //eepromtaste.attach(EEPROMTASTE, INPUT_PULLUP);
-   //eepromtaste.interval(5);
-   //eepromtaste.setPressedState(LOW);
+   // eepromtaste.attach(EEPROMTASTE, INPUT_PULLUP);
+   // eepromtaste.interval(5);
+   // eepromtaste.setPressedState(LOW);
 
    // digitalWrite(EEPROMTASTE, HIGH);
 
@@ -1170,20 +1186,17 @@ void setup()
 
    ResetData();
 
-   
-   
-
    Serial.print("servomitte\n");
    for (uint8_t i = 0; i < NUM_SERVOS; i++)
    {
       uint16_t wert = 500 + i * 50;
       wert = 750;
-      //impulstimearray[i] = wert; // mittelwert
+      // impulstimearray[i] = wert; // mittelwert
 
       servomittearray[i] = analogRead(adcpinarrayTeensy[i]);
 
-      //potgrenzearray[i][0] = servomittearray[i];
-      //potgrenzearray[i][1] = servomittearray[i];
+      // potgrenzearray[i][0] = servomittearray[i];
+      // potgrenzearray[i][1] = servomittearray[i];
 
       /*
       if(i == THROTTLE)
@@ -1208,7 +1221,6 @@ void setup()
    } // for NUM_SERVOS
 
    // Timer starten
- 
 
    setupDebounce();
 
@@ -1283,14 +1295,14 @@ int Border_Map10(int val, int lower, int middle, int upper, bool reverse)
    return (reverse ? 512 - val : val);
 }
 
-int Border_Mapvar255_raw( int val, int lower, int middle, int upper, bool reverse)
+int Border_Mapvar255_slave(int val, int lower, int middle, int upper, bool reverse)
 {
    val = constrain(val, lower, upper); // Grenzen einhalten
-   uint8_t levelwerta = 0; //levelwertarray[servo] & 0x07;
-   uint8_t levelwertb = 0; //(levelwertarray[servo] & 0x70) >> 4;
+   //uint8_t levelwerta = 0;             // levelwertarray[servo] & 0x07;
+   //uint8_t levelwertb = 0;             //(levelwertarray[servo] & 0x70) >> 4;
 
-   uint8_t expowerta = 0; //expowertarray[servo] & 0x07;
-   uint8_t expowertb = 0; //(expowertarray[servo] & 0x70) >> 4;
+   //uint8_t expowerta = 0; // expowertarray[servo] & 0x07;
+   //uint8_t expowertb = 0; //(expowertarray[servo] & 0x70) >> 4;
 
    // levelwerta = 0;
    // levelwertb = 0;
@@ -1338,8 +1350,8 @@ int Border_Mapvar255_raw( int val, int lower, int middle, int upper, bool revers
 int Border_Mapvar255(uint8_t servo, int val, int lower, int middle, int upper, bool reverse)
 {
    val = constrain(val, lower, upper); // Grenzen einhalten
-   uint8_t levelwerta = levelwertarray[servo] & 0x07;
-   uint8_t levelwertb = (levelwertarray[servo] & 0x70) >> 4;
+   levelwerta = levelwertarray[servo] & 0x07;
+   levelwertb = (levelwertarray[servo] & 0x70) >> 4;
 
    uint8_t expowerta = expowertarray[servo] & 0x07;
    uint8_t expowertb = (expowertarray[servo] & 0x70) >> 4;
@@ -1441,36 +1453,32 @@ void loop()
 
    if (zeitintervall > 500)
    {
-      //slaveISR;
-      // Einstellung Master/Slave
-      if(masterslavestatus & (1<<MASTERSLAVECHANGE))
+      // slaveISR;
+      //  Einstellung Master/Slave
+      if (masterslavestatus & (1 << MASTERSLAVECHANGE))
       {
-         //Serial.println(slavecounter&0x07);
+         // Serial.println(slavecounter&0x07);
          slavecounter++;
-         if(slavecounter > 2)
+         if (slavecounter > 2)
          {
-            if(masterslavestatus & (1<<MASTER))
+            if (masterslavestatus & (1 << MASTER))
             {
-               if(digitalRead(PPM_DIR_PIN) == 0) // umschalten auf Slave
+               if (digitalRead(PPM_DIR_PIN) == 0) // umschalten auf Slave
                {
-                  masterslavestatus &= ~(1<<MASTER);
-                  masterslavestatus |= (1<<SLAVE);
-                  
+                  masterslavestatus &= ~(1 << MASTER);
+                  masterslavestatus |= (1 << SLAVE);
                }
             }
             else if (digitalRead(PPM_DIR_PIN) == 1) // umschalten auf Master
-               {
-                  masterslavestatus &= ~(1<<SLAVE);
-                  masterslavestatus |= (1<<MASTER);
-               }
-            masterslavestatus &= ~(1<<MASTERSLAVECHANGE);
+            {
+               masterslavestatus &= ~(1 << SLAVE);
+               masterslavestatus |= (1 << MASTER);
+            }
+            masterslavestatus &= ~(1 << MASTERSLAVECHANGE);
 
             slavecounter = 0;
          }
-
       }
-      
-
 
       //
       zeitintervall = 0;
@@ -1529,11 +1537,11 @@ void loop()
          // Serial.print("T 1");
          switch (curr_screen)
          {
-            case 0:
-            {
-               slaveeepromwrite();
-
-            }break;
+         case 0:
+         {
+            // slaveeepromwrite();
+         }
+         break;
          case 1: // MENUSCREEN
          {
             curr_screen = 5;
@@ -1653,6 +1661,16 @@ void loop()
                      break;
                      } // switch curr_wert
                      level = (levelO << 4) | levelU;
+                     Serial.print("levelO\t");
+                     Serial.print(levelO,HEX);
+                     Serial.print("\tlevelU\t");
+                     Serial.print(levelU,HEX);
+                     Serial.print("\tlevel\t");
+                     Serial.print(level,HEX);
+                     Serial.print("\tlevel int\t");
+                     Serial.print(level);
+                     Serial.print("\n");
+
                      kanalsettingarray[curr_model][curr_funktion][1] = level;
                   }
                   break;
@@ -1909,10 +1927,10 @@ void loop()
                         calibstatus &= ~(1 << CALIB_START); // calib beenden
 
                         Serial.println(" vor write: ");
-                         printeeprom(240);
-                         eepromwrite();
+                        printeeprom(240);
+                        eepromwrite();
                         Serial.println(" nach write: ");
-                         printeeprom(240);
+                        printeeprom(240);
                      }
 
                      updateModusScreen();
@@ -2365,8 +2383,8 @@ void loop()
       if (loopcounter1 > BLINKRATE)
       {
          loopcounter1 = 0;
-         Serial.print("\tmasterslavestatus: ");
-         Serial.println((masterslavestatus & 0x03));
+         //Serial.print("\tmasterslavestatus: ");
+         //Serial.println((masterslavestatus & 0x03));
          if (TEST)
          {
             Serial.print("ACK erhalten: ");
@@ -2417,6 +2435,7 @@ void loop()
             Serial.print("\tYAW\t");
             Serial.print(data.yaw);
 
+
             Serial.print("\t\tPITCH\t");
             Serial.print(data.pitch);
 
@@ -2434,6 +2453,36 @@ void loop()
          }
          break;
 
+         case ANZEIGE_LEVEL:
+         {
+            
+            //Serial.print("curr_model:\t");
+            //Serial.print(curr_model);
+            Serial.print("\t");
+            Serial.print(" kanalsettingarray 1 level:\t");
+            Serial.print(kanalsettingarray[curr_model][0][1]);
+            Serial.print("\t");
+            
+            Serial.print(" *\t");
+            Serial.print("\tYAW levelwert raw\t");
+            Serial.print(levelwertarray[YAW],HEX);
+            
+            Serial.print("\tYAW levelwertaraw\t");
+            Serial.print(levelwertaraw,HEX);
+            Serial.print("\tYAW levelwertbraw\t");
+            Serial.print(levelwertbraw,HEX);
+            
+            Serial.print(" kanalsettingarray 2 expo:\t");
+            Serial.print(kanalsettingarray[curr_model][0][2]);
+            Serial.print("\tYAW expowert raw\t");
+            Serial.print(expowertarray[YAW],HEX);
+            Serial.print("\tYAW expowertaraw\t");
+            Serial.print(expowertaraw,HEX);
+            Serial.print("\tYAW expowertbraw\t");
+            Serial.print(expowertbraw,HEX);
+            Serial.print("\n");
+         }break;
+
          case ANZEIGE_TAST:
          {
          }
@@ -2441,17 +2490,17 @@ void loop()
 
          case ANZEIGE_SLAVE:
          {
-            //if(masterslavestatus & (1<<SLAVE))
+            // if(masterslavestatus & (1<<SLAVE))
             {
                Serial.print("ANZEIGE_SLAVE Slavechannelarray: \t");
-               for(uint8_t i=0;i<NUM_SERVOS;i++)
+               for (uint8_t i = 0; i < NUM_SERVOS; i++)
                {
                   Serial.print("\t");
 
                   Serial.print(Slavechannelarray[i]);
                }
                Serial.print("\t");
-               for(uint8_t i=0;i<NUM_SERVOS;i++)
+               for (uint8_t i = 0; i < NUM_SERVOS; i++)
                {
                   Serial.print("\t");
 
@@ -2704,7 +2753,7 @@ void loop()
 
          if (loopcounter1 > 25)
          {
-            //loopcounter1 = 0;
+            // loopcounter1 = 0;
          }
 
          if (TEST == 1)
@@ -2812,7 +2861,7 @@ void loop()
          potwert = analogRead(adcpinarrayTeensy[i]);
          potwertarrayraw[i] = potwert;
 
-         if(calibstatus & (1<<CALIB_START))
+         if (calibstatus & (1 << CALIB_START))
          {
 
             if (potwert >= potgrenzearray[i][0])
@@ -2841,14 +2890,14 @@ void loop()
 
          // eventuell ungleiche werte
 
-         // levelwerta = levelwert & 0x07;
-         // levelwertb = (levelwert & 0x70)>>4;
+          levelwerta = levelwert & 0x07;
+          levelwertb = (levelwert & 0x70)>>4;
 
          // expowert ev. ungleich fuer richtung
          expowert = kanalsettingarray[curr_model][i][2]; // element2, expoarray
          expowertarray[i] = kanalsettingarray[curr_model][i][2];
-         // expowerta = expowert & 0x07;
-         // expowertb = (expowert & 0x70)>>4;
+         expowerta = expowert & 0x07;
+         expowertb = (expowert & 0x70)>>4;
 
          // map(value, fromLow, fromHigh, toLow, toHigh)
 
@@ -2870,10 +2919,22 @@ void loop()
 
          if (i == 0)
          {
+
+
             potwertyaw = potwert;
 
-            levelwertayaw = levelwertarray[YAW];
-            levelwertbyaw = levelwertarray[YAW];
+            levelwertaraw = levelwertarray[YAW] & 0x07;
+            levelwertbraw = (levelwertarray[YAW] & 0xF0) >> 4;
+
+            expowertaraw = expowertarray[YAW] & 0x07;
+            expowertbraw = (expowertarray[YAW] & 0xF0) >> 4;
+
+            if (TEST)
+            {
+
+            
+            }
+
          }
       } // for i
 
@@ -2943,7 +3004,7 @@ void loop()
 
       data.aux1 = digitalRead(5); // CH5
       data.aux2 = digitalRead(7); // CH6
-      //OSZIA_LO();
+      // OSZIA_LO();
       if (radio.write(&data, sizeof(data)))
       {
          radiocounter++;
@@ -2981,10 +3042,10 @@ void loop()
       }
       else
       {
-         //Serial.println("radio error\n");
+         // Serial.println("radio error\n");
          digitalWrite(BUZZPIN, !(digitalRead(BUZZPIN)));
          errcounter++;
       }
-      //OSZIA_HI();
+      // OSZIA_HI();
    }
 }

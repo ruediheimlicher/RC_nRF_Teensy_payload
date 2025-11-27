@@ -24,6 +24,8 @@
 #define ANZEIGE_ADC     3
 #define ANZEIGE_SLAVE   4
 
+#define ANZEIGE_LEVEL  5
+
 #define HOMESCREEN      0
 #define MODELLSCREEN    1 // SYMPEL, TROTTLE ...
 #define FUNKTIONSCREEN  2 // YAW,PITCH ...
