@@ -1054,7 +1054,7 @@ void setCalib(void)
 
 void setup()
 {
-   anzeigestatus = ANZEIGE_LEVEL;
+   anzeigestatus = ANZEIGE_POT;
 
    masterslavestatus |= (1 << MASTER);
    uint8_t ee[16];
@@ -1298,16 +1298,15 @@ int Border_Map10(int val, int lower, int middle, int upper, bool reverse)
 int Border_Mapvar255_slave(int val, int lower, int middle, int upper, bool reverse)
 {
    val = constrain(val, lower, upper); // Grenzen einhalten
-   //uint8_t levelwerta = 0;             // levelwertarray[servo] & 0x07;
-   //uint8_t levelwertb = 0;             //(levelwertarray[servo] & 0x70) >> 4;
 
-   //uint8_t expowerta = 0; // expowertarray[servo] & 0x07;
-   //uint8_t expowertb = 0; //(expowertarray[servo] & 0x70) >> 4;
+   // Einstellungen schon im Slave vorgenommen
+   uint8_t levelwerta = 0;             // levelwertarray[servo] & 0x07;
+   uint8_t levelwertb = 0;             //(levelwertarray[servo] & 0x70) >> 4;
 
-   // levelwerta = 0;
-   // levelwertb = 0;
-   // expowerta = 0;
-   // expowertb = 0;
+   uint8_t expowerta = 0; // expowertarray[servo] & 0x07;
+   uint8_t expowertb = 0; //(expowertarray[servo] & 0x70) >> 4;
+
+   
 
    if (val < middle)
    {
@@ -2423,6 +2422,7 @@ void loop()
                // Serial.print(Border_Mapvar255(i, potwertarray[i],2000,1500,1000,false));
                // Serial.print(map( potwertarray[i],0,1024,2000,1000));
             }
+            /*
             Serial.print("\tYAW lower\t");
             Serial.print(potgrenzearray[PITCH][1]);
 
@@ -2431,18 +2431,34 @@ void loop()
 
             Serial.print("\tYAW upper\t");
             Serial.print(potgrenzearray[PITCH][0]);
+            */
 
             Serial.print("\tYAW\t");
             Serial.print(data.yaw);
+             Serial.print("\tYAW  slave\t");
+             uint16_t yawslave = Slavechannelarray[0];
+            Serial.print(yawslave);
 
 
-            Serial.print("\t\tPITCH\t");
+            Serial.print("\tPITCH\t");
             Serial.print(data.pitch);
-
+            Serial.print("\tPITCH slave\t");
+            uint16_t pitchslave = Slavechannelarray[1];
+            Serial.print(pitchslave);
             Serial.print("\tROLL\t");
             Serial.print(data.roll);
             Serial.print("\tTHROTTLE\t");
             Serial.print(data.throttle);
+            Serial.print("\tTH slave\t");
+            Serial.print(Slavechannelarray[3]);
+
+            
+            Serial.print("\tA0\t");
+            Serial.print(ackData[0]);
+            Serial.print("\tA1\t");
+            Serial.print(ackData[1]);
+            // Serial.print("\t\t");
+
 
             Serial.print("\tA2\t");
             Serial.print(ackData[2]);
@@ -2938,8 +2954,17 @@ void loop()
          }
       } // for i
 
+      uint8_t yaw_slave = Slavechannelarray[YAW];
+      
+
       data.yaw = Border_Mapvar255(YAW, potwertarray[YAW], potgrenzearray[YAW][1], servomittearray[YAW], potgrenzearray[YAW][0], false);
 
+      
+      
+      
+      
+      
+      
       /*
       winkelcounter+= 2;
 
