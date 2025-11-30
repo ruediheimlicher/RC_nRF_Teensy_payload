@@ -389,7 +389,7 @@ void slaveplugISR()
    // Serial.print(masterslavestatus);
    if (!(masterslavestatus & (1 << MASTERSLAVECHANGE)))
    {
-      // masterslavestatus |= (1 << MASTERSLAVECHANGE);
+       masterslavestatus |= (1 << MASTERSLAVECHANGE);
    }
 }
 
@@ -2964,8 +2964,10 @@ void loop()
 
       int16_t yaw_slave = Slavechannelarray[YAW];
 
+      
       int16_t yaw_master = Border_Mapvar255(YAW, potwertarray[YAW], potgrenzearray[YAW][1], servomittearray[YAW], potgrenzearray[YAW][0], false);
 
+      /*
       if(abs(yaw_master - 127 ) < 8)
       {
          if(slavedelaycounter)
@@ -2986,7 +2988,8 @@ void loop()
          slavedelaycounter = 100;
          data.yaw = yaw_master;
       }
-       //Border_Mapvar255(YAW, potwertarray[YAW], potgrenzearray[YAW][1], servomittearray[YAW], potgrenzearray[YAW][0], false);
+      */
+      data.yaw = Border_Mapvar255(YAW, potwertarray[YAW], potgrenzearray[YAW][1], servomittearray[YAW], potgrenzearray[YAW][0], false);
 
       
       
