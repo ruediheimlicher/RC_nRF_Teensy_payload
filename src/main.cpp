@@ -70,7 +70,9 @@ uint16_t throttlesekunden = 0;
 elapsedMillis sincelastpaket = 0;
 IntervalTimer servoimpulsTimer;
 IntervalTimer kanalimpulsTimer;
-uint8_t slaveimpulscounter = 0;
+
+uint8_t slavedelaycounter = 0;
+uint8_t slavelerpcounter = 0;
 volatile uint8_t servoindex = 0;
 volatile uint16_t slaveimpulstimearray[NUM_SERVOS] = {};
 
@@ -348,6 +350,11 @@ void OSZIA_TOG()
 {
    digitalWriteFast(OSZIA_PIN, !(digitalRead(OSZIA_PIN)));
 }
+uint16_t lerp(uint16_t a, uint16_t b,float t)
+{
+    return a * (1 - t) + b * t;
+}
+    
 
 uint8_t debounceTaste()
 {
@@ -382,7 +389,7 @@ void slaveplugISR()
    // Serial.print(masterslavestatus);
    if (!(masterslavestatus & (1 << MASTERSLAVECHANGE)))
    {
-      masterslavestatus |= (1 << MASTERSLAVECHANGE);
+      // masterslavestatus |= (1 << MASTERSLAVECHANGE);
    }
 }
 
@@ -1454,6 +1461,7 @@ void loop()
    {
       // slaveISR;
       //  Einstellung Master/Slave
+      
       if (masterslavestatus & (1 << MASTERSLAVECHANGE))
       {
          // Serial.println(slavecounter&0x07);
@@ -1478,7 +1486,7 @@ void loop()
             slavecounter = 0;
          }
       }
-
+      
       //
       zeitintervall = 0;
       digitalWrite(LOOPLED, !digitalRead(LOOPLED));
@@ -2954,10 +2962,31 @@ void loop()
          }
       } // for i
 
-      uint8_t yaw_slave = Slavechannelarray[YAW];
-      
+      int16_t yaw_slave = Slavechannelarray[YAW];
 
-      data.yaw = Border_Mapvar255(YAW, potwertarray[YAW], potgrenzearray[YAW][1], servomittearray[YAW], potgrenzearray[YAW][0], false);
+      int16_t yaw_master = Border_Mapvar255(YAW, potwertarray[YAW], potgrenzearray[YAW][1], servomittearray[YAW], potgrenzearray[YAW][0], false);
+
+      if(abs(yaw_master - 127 ) < 8)
+      {
+         if(slavedelaycounter)
+         {
+            slavedelaycounter--;
+         }
+         else
+         {
+
+            //data.yaw = lerp(yaw_master,yaw_slave,0.5);
+             data.yaw = yaw_slave;
+         }
+        
+         
+      }
+      else
+      {
+         slavedelaycounter = 100;
+         data.yaw = yaw_master;
+      }
+       //Border_Mapvar255(YAW, potwertarray[YAW], potgrenzearray[YAW][1], servomittearray[YAW], potgrenzearray[YAW][0], false);
 
       
       
