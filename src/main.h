@@ -3,6 +3,8 @@
 #ifndef MAIN_H
 #define MAIN_H
 
+#pragma once
+
 #include <Arduino.h>
 #include <inttypes.h>
 #include <util/delay.h>

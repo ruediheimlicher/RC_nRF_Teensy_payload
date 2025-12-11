@@ -76,6 +76,9 @@ uint8_t slavelerpcounter = 0;
 volatile uint8_t servoindex = 0;
 volatile uint16_t slaveimpulstimearray[NUM_SERVOS] = {};
 
+int16_t yaw_slave = 127;
+int16_t yaw_master = 127;
+
 // Decoder
 uint16_t Slavechannelarray[NUM_SERVOS] = {};
 uint16_t Slavechannelmittearray[NUM_SERVOS] = {};
@@ -190,7 +193,7 @@ const float seaLevelPressure = 1013.25;
 float altitude = 0;
 uint16_t altitudeint = 0;
 
-uint8_t temperaturint = 0;
+uint16_t temperaturint = 0;
 float temperaturfloat = 0;
 
 uint8_t eepromstatus = 0;
@@ -236,9 +239,7 @@ volatile bool pulseState = true;
 volatile uint32_t elapsedFrame = 0;
 volatile uint8_t ISRcounter = 0;
 
-volatile uint16_t channels[NUM_SERVOS] =
-    {
-        1500, 1500, 1500, 1500};
+volatile uint16_t channels[NUM_SERVOS] = {  1500, 1500, 1500, 1500};
 
 // V2
 volatile uint16_t ppm[NUM_SERVOS] = {1500, 2000, 1500, 1000};
@@ -321,6 +322,10 @@ elapsedMillis buzzintervall = 0;
 
 int Border_Mapvar255(uint8_t servo, int val, int lower, int middle, int upper, bool reverse);
 
+
+
+
+
 Signal data;
 void ResetData()
 {
@@ -377,16 +382,42 @@ void setupDebounce()
 
 // PPM decode
 
+
+volatile uint32_t t_last = 0;
+volatile uint16_t ch[4];
+volatile uint8_t ch_idx = 0;
+
+void isr_ppm() {
+    uint32_t t = ARM_DWT_CYCCNT;       // 600 MHz → 1 Cycle ≈ 1.67 ns
+    uint32_t dt = t - t_last;
+    t_last = t;
+
+    // 3000–5000 µs Sync → in cycles: 3000e-6 * 600e6 = 1.8e6
+    if (dt > 4800000) {
+        ch_idx = 0;
+        OSZIA_LO(); // Sync → Frame neu
+        return;
+    }
+      OSZIA_HI(); // Sync → Frame neu
+    // Pulsbreite in µs zurückrechnen
+    Slavechannelarray[ch_idx] = dt / 600;             // 600 cycles = 1 µs
+    if (ch_idx < 4) ch_idx++;
+}
+
+
 volatile unsigned long lastTime = 0;
 volatile unsigned long pulseLength = 0;
 volatile byte channel = 0;
 const byte maxChannels = 8;
 // volatile unsigned int ppmValues[maxChannels];
 
+
+
 void slaveplugISR()
 {
-   // Serial.print("slaveplugISR status: ");
-   // Serial.print(masterslavestatus);
+    Serial.print("slaveplugISR status: ");
+    uint8_t status = masterslavestatus & (0x03);
+    Serial.println(status );
    if (!(masterslavestatus & (1 << MASTERSLAVECHANGE)))
    {
        masterslavestatus |= (1 << MASTERSLAVECHANGE);
@@ -414,8 +445,8 @@ void slaveISR()
       // red mit mitte von slave
       uint8_t red = Border_Mapvar255_slave(dur, 1000, Slavechannelmittearray[slaveindex], 2000, false);
 
-      Slavechannelarray[slaveindex++] = red; // Kanalwert speichern
-      // slaveindex++;
+      Slavechannelarray[slaveindex] = red; // Kanalwert speichern
+      slaveindex++;
    }
 }
 
@@ -1061,7 +1092,7 @@ void setCalib(void)
 
 void setup()
 {
-   anzeigestatus = ANZEIGE_POT;
+   anzeigestatus = ANZEIGE_ADC;
 
    masterslavestatus |= (1 << MASTER);
    uint8_t ee[16];
@@ -1089,6 +1120,8 @@ void setup()
    // PPM decode, von RC_22
    pinMode(PPM_DIR_PIN, INPUT_PULLUP);
 
+   
+
    pinMode(PPM_DATA_PIN, OUTPUT);
    digitalWrite(PPM_DATA_PIN, LOW);
 
@@ -1097,7 +1130,12 @@ void setup()
       pinMode(adcpinarrayTeensy[i], INPUT);
    }
 
-   attachInterrupt(digitalPinToInterrupt(PPM_DATA_PIN), slaveISR, RISING);
+   for (int i = 0; i < NUM_SERVOS; i++)
+   {
+      Slavechannelarray[i] = 127; // Mitte
+   }
+
+
 
    // attachInterrupt(digitalPinToInterrupt(PPM_DIR_PIN), slaveplugISR, CHANGE);
 
@@ -1124,7 +1162,12 @@ void setup()
    // Serial.println(__TIME__);
 
    pinMode(PPM_DATA_PIN, INPUT_PULLDOWN);
+
    attachInterrupt(digitalPinToInterrupt(PPM_DATA_PIN), slaveISR, RISING);
+   int irq = digitalPinToInterrupt(PPM_DATA_PIN);
+   NVIC_SET_PRIORITY(irq, 0);
+   //attachInterrupt(digitalPinToInterrupt(PPM_DATA_PIN), isr_ppm, RISING);
+
 
    printeeprom(240);
 
@@ -1461,31 +1504,59 @@ void loop()
    {
       // slaveISR;
       //  Einstellung Master/Slave
-      
+     /* 
       if (masterslavestatus & (1 << MASTERSLAVECHANGE))
       {
-         // Serial.println(slavecounter&0x07);
-         slavecounter++;
+         Serial.print("slavecounter: ");
+          Serial.print(slavecounter&0x07);
+         
          if (slavecounter > 2)
          {
             if (masterslavestatus & (1 << MASTER))
             {
                if (digitalRead(PPM_DIR_PIN) == 0) // umschalten auf Slave
                {
+                  Serial.print("\t> MASTER");
                   masterslavestatus &= ~(1 << MASTER);
                   masterslavestatus |= (1 << SLAVE);
                }
             }
             else if (digitalRead(PPM_DIR_PIN) == 1) // umschalten auf Master
             {
+               Serial.print("\t> SLAVE");
                masterslavestatus &= ~(1 << SLAVE);
                masterslavestatus |= (1 << MASTER);
             }
             masterslavestatus &= ~(1 << MASTERSLAVECHANGE);
-
+            Serial.println();
             slavecounter = 0;
          }
+         else
+         {
+            slavecounter++;
+            Serial.println();
+         }
       }
+      */
+     if (digitalRead(PPM_DIR_PIN) == 0) // Switch geschlossen, umschalten auf Slave
+      {
+         if (masterslavestatus & (1 << MASTER)) // war bisher master
+         {
+            Serial.println("\t> SLAVE");
+            masterslavestatus &= ~(1 << MASTER);
+            masterslavestatus |= (1 << SLAVE);
+         }
+      }
+      else // Schalter offen, umschalten auf Master
+      {
+             if (masterslavestatus & (1 << SLAVE)) // war bisher slave
+             {
+               Serial.println("\t> MASTER");
+               masterslavestatus &= ~(1 << SLAVE);
+               masterslavestatus |= (1 << MASTER);
+             }
+      }
+
       
       //
       zeitintervall = 0;
@@ -2519,18 +2590,24 @@ void loop()
                Serial.print("ANZEIGE_SLAVE Slavechannelarray: \t");
                for (uint8_t i = 0; i < NUM_SERVOS; i++)
                {
+                  Serial.print("\tslave ");
+                  Serial.print(i);
                   Serial.print("\t");
-
                   Serial.print(Slavechannelarray[i]);
+                  Serial.print("\tPOT\t");
+                  uint16_t p = Border_Mapvar255(i, potwertarray[i], potgrenzearray[i][1], servomittearray[i], potgrenzearray[i][0], false);
+                  Serial.print(p);
+
+
                }
                Serial.print("\t");
                for (uint8_t i = 0; i < NUM_SERVOS; i++)
                {
-                  Serial.print("\t");
-
-                  Serial.print(Slavechannelmittearray[i]);
+                  //Serial.print("\t");
+                  //Serial.print(Slavechannelmittearray[i]);
                }
-
+               Serial.print("\tslavedelaycounter\t");
+               Serial.print(slavedelaycounter);
                Serial.print("\n");
             }
          }
@@ -2538,25 +2615,41 @@ void loop()
 
          case ANZEIGE_ADC:
          {
+            /*
             Serial.print("\tbatteriespannung raw: ");
             Serial.print(batteriespannungraw);
-            Serial.print("\tbatteriespannung: ");
-            Serial.print(batteriespannung);
+           // Serial.print("\tbatteriespannung: ");
+           // Serial.print(batteriespannung);
             Serial.print("\tUBatt: ");
             Serial.print(UBatt);
             Serial.print("\tbatterieanzeige: ");
             Serial.print(batterieanzeige);
             Serial.print("\t");
-
+            */
             Serial.print("\tack-Spannung: ");
             Serial.print(ackData[3]);
-            Serial.print("\tflyerbatteriespannung: ");
+            Serial.print("\tflyerbattsp: ");
             Serial.print(flyerbatteriespannung);
             Serial.print("\tUFlyerBatt: ");
             Serial.print(UFlyerBatt);
-            Serial.print("\tflyerbatterieanzeige: ");
+            Serial.print("\tflyerbattanz ");
             Serial.print(flyerbatterieanzeige);
+            Serial.print("\tpressureint: ");
+            Serial.print(pressureint);
+            Serial.print("\tpressurefloat: ");
+            Serial.print(pressurefloat);
+            Serial.print("\ttemperaturint: ");
+            Serial.print(temperaturint);
+            Serial.print("\ttemperaturfloat: ");
+            Serial.print(temperaturfloat);
+            Serial.print("\taltitude: ");
+            Serial.print(altitude);
+             Serial.print("\taltitudeint: ");
+            Serial.print(altitudeint);
 
+            
+
+            
             Serial.print("\n");
          }
          break;
@@ -2578,6 +2671,7 @@ void loop()
                   Serial.print("\t potwert: ");
                   Serial.print(potwertarray[i]);
                   Serial.print("\t\t");
+                  
                }
                Serial.print("\n");
             }
@@ -2633,6 +2727,7 @@ void loop()
          {
             batteriespannung = batteriespannung + faktor * (batteriespannungraw - batteriespannung);
          }
+         
          UBatt = (batteriespannung) / 154;
 
          // batteriespannung = fmap(batteriespannung,60.0,900.0,0,44.0);
@@ -2961,35 +3056,44 @@ void loop()
 
          }
       } // for i
-
-      int16_t yaw_slave = Slavechannelarray[YAW];
+      //if(Slavechannelarray[YAW] )
+      yaw_slave = lerp(Slavechannelarray[YAW],yaw_slave,0.5);;
 
       
-      int16_t yaw_master = Border_Mapvar255(YAW, potwertarray[YAW], potgrenzearray[YAW][1], servomittearray[YAW], potgrenzearray[YAW][0], false);
+      yaw_master = Border_Mapvar255(YAW, potwertarray[YAW], potgrenzearray[YAW][1], servomittearray[YAW], potgrenzearray[YAW][0], false);
 
-      /*
-      if(abs(yaw_master - 127 ) < 8)
+      if(masterslavestatus & (1 << MASTER)) //
       {
-         if(slavedelaycounter)
+         data.yaw = yaw_master;
+         slavedelaycounter = 100;
+      }
+      else 
+      {
+
+         if(abs(yaw_master - 127 ) < 8)
          {
-            slavedelaycounter--;
+            if(slavedelaycounter)
+            {
+               slavedelaycounter--;
+            }
+            else 
+            {
+
+               //data.yaw = lerp(yaw_master,yaw_slave,0.5);
+               data.yaw = yaw_slave;
+            }
+         
+            
          }
+
          else
          {
-
-            //data.yaw = lerp(yaw_master,yaw_slave,0.5);
-             data.yaw = yaw_slave;
+            slavedelaycounter = 100;
+            data.yaw = yaw_master;
          }
-        
-         
       }
-      else
-      {
-         slavedelaycounter = 100;
-         data.yaw = yaw_master;
-      }
-      */
-      data.yaw = Border_Mapvar255(YAW, potwertarray[YAW], potgrenzearray[YAW][1], servomittearray[YAW], potgrenzearray[YAW][0], false);
+
+      //data.yaw = Border_Mapvar255(YAW, potwertarray[YAW], potgrenzearray[YAW][1], servomittearray[YAW], potgrenzearray[YAW][0], false);
 
       
       
@@ -3062,6 +3166,7 @@ void loop()
       data.aux1 = digitalRead(5); // CH5
       data.aux2 = digitalRead(7); // CH6
       // OSZIA_LO();
+
       if (radio.write(&data, sizeof(data)))
       {
          radiocounter++;
@@ -3072,10 +3177,11 @@ void loop()
          {
             radio.read(&ackData, sizeof(ackData));
             temperaturint = ackData[0] * 2;
-            float temperaturfloat = temperaturint;
-            pressureint = (ackData[1] << 8) | ackData[2];
-            float pressurefloat = pressureint / 10;
-            // altitude = getAltitude(pressurefloat,temperaturfloat);
+            temperaturfloat = temperaturint/10;
+            pressureint = ((ackData[1] << 8) | ackData[2]) ;
+            
+            pressurefloat = pressureint  ; // 
+            altitude = getAltitude(pressurefloat,temperaturfloat);
             altitudeint = altitude;
             /*
              //Serial.print("ACK erhalten: ");

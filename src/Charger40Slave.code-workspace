@@ -1,0 +1,18 @@
+{
+	"folders": [
+		{
+			"path": "../../../../Programming/ChargerInterface/Charger40Slave/Charger40Slave"
+		},
+		{
+			"name": "251205-210041-teensy40",
+			"path": "../../../../PlatformIO/Projects/251205-210041-teensy40"
+		},
+		{
+			"name": "RC_nRF_Teensy_payload",
+			"path": ".."
+		}
+	],
+	"settings": {
+		"git.ignoreLimitWarning": true
+	}
+}
