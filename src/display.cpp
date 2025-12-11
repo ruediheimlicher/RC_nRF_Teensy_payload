@@ -40,7 +40,7 @@ extern uint8_t                   calibstatus;
 extern uint16_t                   batteriespannung;
 
 extern uint16_t pressureint;
-extern uint8_t temperaturint;
+extern uint16_t temperaturint;
 extern float pressurefloat;
 extern float temperaturfloat;
 extern float altitude;
@@ -343,21 +343,22 @@ void updateHomeScreen()
        
 
       //u8g2.sendBuffer();
-
+     
    
    }
-   else if (savestatus == CANCEL)
+   else 
    {
-      
-      u8g2.setDrawColor(0);
-      u8g2.drawBox(4,46,80,18);
-      u8g2.setDrawColor(1);
-      //u8g2.sendBuffer();
-      savestatus = 1;
-   }
-
+      if (savestatus == CANCEL)
+      {
+         u8g2.setDrawColor(0);
+         u8g2.drawBox(4,46,80,18);
+         u8g2.setDrawColor(1);
+         //u8g2.sendBuffer();
+         savestatus = 1;
+   
+      }
       char buf0[4];
-/*
+      /*
       // Yaw
       //u8g2.setCursor(4,30);
       //u8g2.print(data.yaw);
@@ -383,7 +384,7 @@ void updateHomeScreen()
       
       sprintf(buf0, "%3d", data.throttle);
       u8g2.drawStr(30,48,buf0);
-*/
+      */
 
       //sprintf(buf0, "%3d", ackData[0]); // temp
       sprintf(buf0, "%3d", temperaturint/10);
@@ -410,9 +411,9 @@ void updateHomeScreen()
 
       
       uint8_t p = curr_model;
+   
 
-
-  oled_batteriebalken_setwert(BATTX,BATTY,BATTB,BATTH,batterieanzeige);
+   oled_batteriebalken_setwert(BATTX,BATTY,BATTB,BATTH,batterieanzeige);
    u8g2.setFont(u8g2_font_t0_14_mr);  
    
    oled_setBatterieWert(BATTX,BATTY+BATTH+16,BATTB,26,UBatt);
@@ -469,6 +470,7 @@ void setMenuScreen()
 
 void updateMenuScreen() // Liste der Modelle
 {
+   
    uint8_t z =  curr_cursorzeile;
    
    char_y = 2;

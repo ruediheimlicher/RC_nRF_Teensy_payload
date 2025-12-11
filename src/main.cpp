@@ -188,7 +188,8 @@ float UFlyerBatt = 0;
 
 uint16_t pressureint = 0;
 float pressurefloat = 0;
-const float seaLevelPressure = 1013.25;
+float seaLevelPressure = 1013.25;
+float startaltitude = 13;
 
 float altitude = 0;
 uint16_t altitudeint = 0;
@@ -897,6 +898,7 @@ uint16_t readADC_A6()
    return result;
 }
 
+
 // https://forum.arduino.cc/t/ms5611-pressure-problem/543358/6
 float getAltitude(float press, float temp)
 {
@@ -1285,8 +1287,9 @@ void setup()
       // kanalsettingarray[0][i][1] = 0x11; // level
       // kanalsettingarray[0][i][2] = 0x33; // expo
    }
-
+   
    // Serial.print("\n");
+   
 
 } // setup
 
@@ -1956,7 +1959,7 @@ void loop()
                   {
                   case 1: // MODELLSCREEN
                   {
-                     // Serial.print("T 5 > Modellscreen curr_model: ");
+                     Serial.print("T 5 > Modellscreen curr_model: ");
                      // Serial.println(curr_model);
                      setModellScreen();
                      curr_screen = 2;
@@ -1965,7 +1968,7 @@ void loop()
                   break;
                   case 2: // FUNKTIONSCREEN
                   {
-                     // Serial.print("T 5 > FunktionScreen curr_funktion: " );
+                     Serial.print("T 5 > FunktionScreen curr_funktion: " );
                      // Serial.println(curr_funktion);
                      setFunktionScreen();
                      curr_screen = 3;
@@ -1974,7 +1977,7 @@ void loop()
                   break;
                   case 3: // AKTIONSCREEN
                   {
-                     // Serial.print("T 5 > AktionScreen curr_aktion: " );
+                     Serial.print("T 5 > AktionScreen curr_aktion: " );
                      // Serial.println(curr_aktion);
                      setAktionScreen();
                      curr_screen = 4;
@@ -2644,9 +2647,10 @@ void loop()
             Serial.print(temperaturfloat);
             Serial.print("\taltitude: ");
             Serial.print(altitude);
-             Serial.print("\taltitudeint: ");
+            Serial.print("\taltitudeint: ");
             Serial.print(altitudeint);
-
+            Serial.print("\tstartaltitude: ");
+            Serial.print(startaltitude);
             
 
             
@@ -3183,6 +3187,7 @@ void loop()
             pressurefloat = pressureint  ; // 
             altitude = getAltitude(pressurefloat,temperaturfloat);
             altitudeint = altitude;
+            
             /*
              //Serial.print("ACK erhalten: ");
              //Serial.print("\t");
