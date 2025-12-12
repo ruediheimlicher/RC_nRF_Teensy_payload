@@ -1538,6 +1538,7 @@ void loop()
          }
       }
       */
+     
      if (digitalRead(PPM_DIR_PIN) == 0) // Switch geschlossen, umschalten auf Slave
       {
          if (masterslavestatus & (1 << MASTER)) // war bisher master
@@ -1604,7 +1605,7 @@ void loop()
    } // zeitintervall > 500
 
    // Tastatur
-
+   
    if (tastaturstatus & (1 << TASTE_OK) && Taste) // Menu ansteuern
    {
       tastaturcounter = 0;
@@ -1616,7 +1617,7 @@ void loop()
       break;
       case 1:
       {
-         // Serial.print("T 1");
+         Serial.print("T 1");
          switch (curr_screen)
          {
          case 0:
@@ -2973,6 +2974,7 @@ void loop()
    {
       // digitalWrite(BUZZPIN,!(digitalRead(BUZZPIN)));
    }
+
 
    if (paketcounter > 20) // 20ms
    {
