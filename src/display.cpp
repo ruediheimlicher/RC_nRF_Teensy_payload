@@ -346,18 +346,20 @@ void updateHomeScreen()
 
    
    }
-   else if (savestatus == CANCEL)
+   else 
    {
-      
-      u8g2.setDrawColor(0);
-      u8g2.drawBox(4,46,80,18);
-      u8g2.setDrawColor(1);
-      //u8g2.sendBuffer();
-      savestatus = 1;
-   }
+      if (savestatus == CANCEL)
+      {
+         
+         u8g2.setDrawColor(0);
+         u8g2.drawBox(4,46,80,18);
+         u8g2.setDrawColor(1);
+         //u8g2.sendBuffer();
+         savestatus = 1;
+      }
 
       char buf0[4];
-/*
+      /*
       // Yaw
       //u8g2.setCursor(4,30);
       //u8g2.print(data.yaw);
@@ -383,7 +385,7 @@ void updateHomeScreen()
       
       sprintf(buf0, "%3d", data.throttle);
       u8g2.drawStr(30,48,buf0);
-*/
+      */
 
       //sprintf(buf0, "%3d", ackData[0]); // temp
       sprintf(buf0, "%3d", temperaturint/10);
@@ -406,30 +408,30 @@ void updateHomeScreen()
       sprintf(buf1, "%3d", altitudeint); // alt
     //  sprintf(buf1, "%3d", 1234); // alt
 
-      u8g2.drawStr(TAB0+64,64,buf1);
+      u8g2.drawStr(TAB0+56,64,buf1);
 
-      
+   }   
       uint8_t p = curr_model;
 
 
-  oled_batteriebalken_setwert(BATTX,BATTY,BATTB,BATTH,batterieanzeige);
-   u8g2.setFont(u8g2_font_t0_14_mr);  
-   
-   oled_setBatterieWert(BATTX,BATTY+BATTH+16,BATTB,26,UBatt);
+      oled_batteriebalken_setwert(BATTX,BATTY,BATTB,BATTH,batterieanzeige);
+         u8g2.setFont(u8g2_font_t0_14_mr);  
+         
+         oled_setBatterieWert(BATTX,BATTY+BATTH+16,BATTB,26,UBatt);
 
 
-   oled_flyerbatteriebalken_setwert(FLYBATTX,FLYBATTY,FLYBATTB,FLYBATTH,flyerbatterieanzeige);
-   u8g2.setFont(u8g2_font_t0_14_mr);  
-   
-   //oled_setBatterieWert(BATTX,BATTY+BATTH+16,BATTB,26,UBatt);
+         oled_flyerbatteriebalken_setwert(FLYBATTX,FLYBATTY,FLYBATTB,FLYBATTH,flyerbatterieanzeige);
+         u8g2.setFont(u8g2_font_t0_14_mr);  
+         
+         //oled_setBatterieWert(BATTX,BATTY+BATTH+16,BATTB,26,UBatt);
 
 
-   u8g2.setFont(u8g2_font_t0_15_mr);  
-   //
-   uint8_t la = kanalsettingarray[0][0][1] & 0x07;
-   uint8_t  lb = (kanalsettingarray[0][0][1] & 0x70)>>4;
+      u8g2.setFont(u8g2_font_t0_15_mr);  
+      //
+      uint8_t la = kanalsettingarray[0][0][1] & 0x07;
+      uint8_t  lb = (kanalsettingarray[0][0][1] & 0x70)>>4;
 
-   //u8g2.sendBuffer();
+      //u8g2.sendBuffer();
 }
 
 void setMenuScreen()
@@ -439,7 +441,7 @@ void setMenuScreen()
    //blink_cursorpos=0xFFFF;
    charh = u8g2.getMaxCharHeight()-1;
 
-   char_x = 24;
+   char_x = 16;
    char_y = 45;
    u8g2.setDrawColor(1);
    u8g2.setFontDirection(3);
@@ -474,7 +476,7 @@ void updateMenuScreen() // Liste der Modelle
    char_y = 2;
    uint8_t i = 0;
    charh = u8g2.getMaxCharHeight()-1;
-   char_x = 36;
+   char_x = 28;
    while (char_y < 64)
    {
       if(i==curr_model)
@@ -509,12 +511,12 @@ void setModellScreen() // Auswahl Funktion fuer ausgewaehltes Modell
    u8g2.clear();
    resetRegister();
    //blink_cursorpos=0xFFFF;
-   char_x = 36;
+   char_x = 16;
    char_y = 45;
    //u8g2.drawFrame(char_y,char_y,64,18);
    u8g2.setDrawColor(1);
    u8g2.setFontDirection(3);
-   u8g2.drawStr(char_x,char_y + charh, ModelTable[curr_model]);
+   u8g2.drawStr(char_x,char_y + charh, ModelTable[curr_model]); // Sympel usw
    u8g2.setFontDirection(0);
    char_y = taby[3];
    
@@ -530,11 +532,11 @@ void updateModellScreen(void)
    uint8_t i = 0;
    u8g2.setFont(u8g2_font_t0_14_mr);  
    charh = u8g2.getMaxCharHeight()-1;
-   char_x = 48;
+   char_x = 28;
    while (char_y < 64)
    {
        u8g2.setDrawColor(1);
-      u8g2.drawStr(char_x+2,char_y + charh, FunktionTable[i]);
+      u8g2.drawStr(char_x+2,char_y + charh, FunktionTable[i]); // YAW, PITCH...
       if(i==curr_funktion)
       {
          u8g2.setDrawColor(1);
@@ -560,7 +562,7 @@ void setFunktionScreen() // Auswahl Aktion
    u8g2.clear();
    resetRegister();
    //blink_cursorpos=0xFFFF;
-   char_x = 18;
+   char_x = 16;
    char_y = 45;
    //u8g2.drawFrame(char_y,char_y,64,18);
    u8g2.setDrawColor(1);
@@ -577,7 +579,7 @@ void updateFunktionScreen()
    //u8g2.setFont(u8g2_font_t0_14_mr);  
    u8g2.setFont(u8g2_font_t0_15_mr);  
    charh = u8g2.getMaxCharHeight()-1;
-   char_x = 36;
+   char_x = 28;
 
    uint8_t feldx = 110;
    uint8_t feldyO = 6;
@@ -671,7 +673,7 @@ void setAktionScreen()
    
    resetRegister();
    //blink_cursorpos=0xFFFF;
-   char_x = 18;
+   char_x = 16;
    char_y = 45;
    u8g2.setFont(u8g2_font_t0_15_mr);
    u8g2.setDrawColor(1);

@@ -11,18 +11,7 @@
 
 
 // Homescreen
-/*
- const char titel0[]  = "RC-22 Home";
- const char titel1[]  = "ON-Zeit:";
- const char titel2[]  = "Stoppuhr";
- const char titel3[]  = "Motorzeit";
- const char titel4[]  = "Menu";
- const char titel5[]  = "Set";
- const char titel6[]  = "Akku\0";
- const char titel7[]  = "D\0";
 
- const char *TitelTable[]  = {titel0, titel1, titel2, titel3, titel4, titel5, titel6, titel7};
-*/
 // Modelle
 const char model0[]  = "Sympel ";
 const char model1[]  = "Trottel";
@@ -34,9 +23,6 @@ const char model2[]  = "Heimi25";
 //const char model7[]  = "CC\0        ";
 
 const char *ModelTable[]  = {model0, model1, model2};//, model3, model4, model5, model6, model7};
-
-
-
 
 /*
 // Settingscreen

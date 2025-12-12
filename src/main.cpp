@@ -1596,7 +1596,11 @@ void loop()
          updateModusScreen();
          u8g2.sendBuffer();
       }
-      updateHomeScreen();
+      if(curr_screen == 0)
+      {
+         updateHomeScreen();
+      }
+   
    } // zeitintervall > 500
 
    // Tastatur
@@ -1954,9 +1958,9 @@ void loop()
                   // Serial.println(curr_screen);
                   switch (curr_screen)
                   {
-                  case 1: // MODELLSCREEN
+                  case 1: // MenuSCREEN
                   {
-                     // Serial.print("T 5 > Modellscreen curr_model: ");
+                     // Serial.print("T 5 curr 1 > Modellscreen curr_model: ");
                      // Serial.println(curr_model);
                      setModellScreen();
                      curr_screen = 2;
@@ -1965,7 +1969,7 @@ void loop()
                   break;
                   case 2: // FUNKTIONSCREEN
                   {
-                     // Serial.print("T 5 > FunktionScreen curr_funktion: " );
+                     // Serial.print("T 5 curr 2> FunktionScreen curr_funktion: " );
                      // Serial.println(curr_funktion);
                      setFunktionScreen();
                      curr_screen = 3;
@@ -1974,7 +1978,7 @@ void loop()
                   break;
                   case 3: // AKTIONSCREEN
                   {
-                     // Serial.print("T 5 > AktionScreen curr_aktion: " );
+                     Serial.print("T 5 curr 3> AktionScreen curr_aktion: " );
                      // Serial.println(curr_aktion);
                      setAktionScreen();
                      curr_screen = 4;
@@ -1983,14 +1987,14 @@ void loop()
                   break;
                   case 4:
                   {
-                     // Serial.print("T 5 screen 4 curr_wert: ");
+                     Serial.print("T 5 curr 4 curr_wert: ");
                      // Serial.println(curr_wert);
                   }
                   break;
 
                   case 5: // MODUS-Screen
                   {
-                     Serial.print("T 5 screen 5 curr_modus: ");
+                     Serial.print("T 5 curr 5 curr_modus: ");
                      Serial.print(curr_modus);
                      Serial.print(" T 5 screen 5 calibstatus: ");
                      Serial.println(calibstatus);
@@ -2434,11 +2438,12 @@ void loop()
 
                // u8g2.sendBuffer();
             }
+            updateHomeScreen();
          }
          break;
 
          } // switch curr_screen
-         updateHomeScreen();
+         //updateHomeScreen();
          u8g2.sendBuffer();
       }
       break;
