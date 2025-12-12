@@ -689,29 +689,7 @@ void eepromwrite(void)
    {
       uint8_t adrlo = 0;
       uint8_t adrhi = 0;
-      /*
-      Serial.print("potgrenzearray raw i:\t");
-      Serial.print(i);
-      Serial.print("\t");
-      Serial.write(taskarray[i]);
-      Serial.print("\t");
-      Serial.print("potgrenze HI:\t");
-      Serial.print(potgrenzearray[i][0]);
-      Serial.print("\t");
-      Serial.print("potgrenze LO:\t");
-      Serial.print(potgrenzearray[i][1]);
-      Serial.print("\t");
-      Serial.print("servomitte:\t");
-      Serial.print(servomittearray[i]);
-      Serial.print("\t");
-      Serial.print("adresse U:\t");
-      uint8_t addresseU_LO = 2 * (i + EEPROMINDEX_U);
-      Serial.print(addresseU_LO);
-      Serial.print("\t");
-      Serial.print("adresse H:\t");
-      uint8_t addresseU_HI = 2 * (i + EEPROMINDEX_U) + 1;
-      Serial.print(addresseU_HI);
-      */
+      
       Serial.print(" *\t");
       Serial.print("level:\t");
       Serial.print(kanalsettingarray[curr_model][i][1]);
@@ -759,11 +737,6 @@ void eepromwrite(void)
       uint8_t levelhi = EEPROM.read(adrhi);
 
 
-
-
-
-
-
       Serial.print(" *\t");
       Serial.print("write expo kanalsettingarray 2:\t");
       Serial.print(kanalsettingarray[curr_model][i][2]);
@@ -775,7 +748,8 @@ void eepromwrite(void)
       adrlo = 2 * (i + EEPROMSLAVEINDEX_M);
       adrhi = 2 * (i + EEPROMSLAVEINDEX_M) + 1;
 
-      /*
+      if(anzeigestatus & ANZEIGE_EEPROM)
+      {
       Serial.print("write Slavechannelmittearray:\t");
       Serial.print(Slavechannelmittearray[i]);
       Serial.print("\t");
@@ -787,41 +761,22 @@ void eepromwrite(void)
       Serial.print("\t");
       Serial.print("data:\t");
       Serial.print(Slavechannelmittearray[i]);
-      */
+     }
 
       Serial.print(" *\n");
       EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M), Slavechannelmittearray[i] & 0x00FF); // slave mitte LO
-      // EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M), 1555 & 0x00FF); // slave mitte LO
 
       _delay_ms(1);
       EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M) + 1, ((Slavechannelmittearray[i] & 0xFF00) >> 8)); // slave mitte HI
-      // EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M ) + 1, ((1555 & 0xFF00) >> 8)); // slave mitte HI
 
       _delay_ms(1);
-
-      // EEPROM.update(2*(i + EEPROMLEVELSETTINGS),(47+i)); // level
-      // EEPROM.update(2*(i + EEPROMEXPOSETTINGS),(63+i )); // expo
 
       EEPROM.update(0, 17);
       _delay_ms(1);
       EEPROM.update(1, 37);
 
       delay(20);
-      /*
-       //Serial.print("kontrolle i: \t*");
-       //Serial.print(i);
-       //Serial.print("\t");
-       uint8_t el = EEPROM.read(2*(i + EEPROMINDEX_U)); // lo byte
-       uint8_t eh = EEPROM.read(2*(i + EEPROMINDEX_U)+1); // hi byte
-       //Serial.print(el);
-       //Serial.print("\t");
-       //Serial.print(eh);
-       //Serial.print("\t");
-       uint16_t grenzeU = (eh << 8) | el;
-       //Serial.print("grenzeU eeprom:\t");
-       //Serial.print(grenzeU);
-       //Serial.print(" *\n");
-       */
+  
    }
 
    Serial.print("eepromwrite end\n");
@@ -971,28 +926,24 @@ void tastenfunktion(uint16_t Tastenwert)
          Serial.print("\n");
          if (anzeigestatus & ANZEIGE_TAST)
          {
-            // Serial.print("Tastenwert anz:\t");
-            // Serial.print(Tastenwert);
-            // Serial.print("\t");
-            // Serial.print(tastaturcounter);
-            // tastaturcounter = 0;
-            // Serial.print("\n");
-            // return;
+             Serial.print("Tastenwert anz:\t");
+             Serial.print(Tastenwert);
+             Serial.print("\t");
+             Serial.print(tastaturcounter);
+             tastaturcounter = 0;
+             Serial.print("\n");
          }
          tastaturcounter = 0x00;
          // Serial.println("Taste down");
          if (!(tastaturstatus & (1 << TASTE_OK))) // Taste noch nicht gedrueckt
          {
             Serial.println("Taste down");
-            ////Serial.println(Tastenwert);
-            // Taste = 0;
-
-            // tastaturstatus |= (1<<TASTE_ON); // nur einmal
+ 
             tastaturstatus |= (1 << TASTE_OK); // nur einmal
 
-            {
-               Taste = Joystick_Tastenwahl_33_2(Tastenwert);
-            }
+            
+            Taste = Joystick_Tastenwahl_33_2(Tastenwert);
+            
 
             Serial.print("Tastenwert: ");
             Serial.print(Tastenwert);
@@ -1097,20 +1048,7 @@ void setup()
    masterslavestatus |= (1 << MASTER);
    uint8_t ee[16];
    delay(50);
-   for (uint8_t i = 0; i < 64; i++)
-   {
-      // ee[i] = EEPROM.read(i);
-      // EEPROM.write(i,0);
-   }
-   // https://wolles-elektronikkiste.de/arduino-nano-every-ein-deep-dive#adc_module
-   /*
-    PORTD.PIN2CTRL = PORT_ISC_INPUT_DISABLE_gc; // Disable digital buffer
-    ADC0.CTRLA = ADC_ENABLE_bm; // Enable ADC
-    ADC0.CTRLC = ADC_REFSEL_INTREF_gc | ADC_PRESC_DIV16_gc; // use internal reference / prescaler: 16
-    VREF.CTRLA = VREF_ADC0REFSEL_4V34_gc; // use internal 4.34 V reference
-    ADC0.MUXPOS = ADC_MUXPOS_AIN1_gc; // use A2 (PD1) as input
-    ADC0.SAMPCTRL = 0;
-    */
+   
    delay(50);
 
    pinMode(OSZIA_PIN, OUTPUT);
@@ -1119,8 +1057,6 @@ void setup()
 
    // PPM decode, von RC_22
    pinMode(PPM_DIR_PIN, INPUT_PULLUP);
-
-   
 
    pinMode(PPM_DATA_PIN, OUTPUT);
    digitalWrite(PPM_DATA_PIN, LOW);
@@ -1135,10 +1071,6 @@ void setup()
       Slavechannelarray[i] = 127; // Mitte
    }
 
-
-
-   // attachInterrupt(digitalPinToInterrupt(PPM_DIR_PIN), slaveplugISR, CHANGE);
-
    pinMode(BUZZPIN, OUTPUT);
    digitalWrite(BUZZPIN, LOW);
 
@@ -1146,18 +1078,7 @@ void setup()
    // savestatus = 0xFF;
 
    delay(100);
-   /*
-    for (uint8_t i=0;i<16;i++)
-    {
-    ee[i] = EEPROM.read(i);
-    //Serial.print(" i: ");
-    //Serial.print(i);
-    //Serial.print(" ee: *");
-    //Serial.print(ee[i]);
-
-    }
-    //Serial.print("\n");
-    */
+  
    // Serial.println(__DATE__);
    // Serial.println(__TIME__);
 
@@ -1181,19 +1102,7 @@ void setup()
 
    pinMode(TASTATUR_PIN, INPUT);
 
-   // pinMode(EEPROMTASTE,INPUT_PULLUP);
-   // eepromtaste.attach(EEPROMTASTE, INPUT_PULLUP);
-   // eepromtaste.interval(5);
-   // eepromtaste.setPressedState(LOW);
-
-   // digitalWrite(EEPROMTASTE, HIGH);
-
-   // https://registry.platformio.org/libraries/adafruit/Adafruit%20LiquidCrystal/installation
-   // set up the LCD's number of rows and columns:
-   // lcd.begin(20, 4);
-   // Print a message to the LCD.
-   // lcd.print("hello, world!");
-
+  
    // OLED
 
    // 0.96"
@@ -1203,8 +1112,6 @@ void setup()
    oled_vertikalbalken(BATTX, BATTY, BATTB, BATTH);
 
    setHomeScreen();
-
-   // u8g2.sendBuffer();
 
    //                Configure the NRF24 module  | NRF24 modül konfigürasyonu
    radio.begin();
@@ -1240,7 +1147,6 @@ void setup()
    for (uint8_t i = 0; i < NUM_SERVOS; i++)
    {
       uint16_t wert = 500 + i * 50;
-      wert = 750;
       // impulstimearray[i] = wert; // mittelwert
 
       servomittearray[i] = analogRead(adcpinarrayTeensy[i]);
@@ -1248,13 +1154,6 @@ void setup()
       // potgrenzearray[i][0] = servomittearray[i];
       // potgrenzearray[i][1] = servomittearray[i];
 
-      /*
-      if(i == THROTTLE)
-      {
-         servomittearray[i] = 127;
-      }
-      */
-      // servomittearray[i] = analogRead(adcpinarrayA[i]);
       Serial.print("i:\t");
       Serial.print(i);
       Serial.print("\t");
@@ -1274,17 +1173,6 @@ void setup()
 
    setupDebounce();
 
-   // Serial.print("\n");
-   //  for (uint8_t i=0;i<NUM_SERVOS;i++)
-   {
-      // Serial.print(adcpinarray[i]);
-      // Serial.print("\t");
-      // Serial.print(servomittearray[i]);
-      // Serial.print("\t");
-
-      // kanalsettingarray[0][i][1] = 0x11; // level
-      // kanalsettingarray[0][i][2] = 0x33; // expo
-   }
 
    // Serial.print("\n");
 
@@ -1355,8 +1243,6 @@ int Border_Mapvar255_slave(int val, int lower, int middle, int upper, bool rever
 
    uint8_t expowerta = 0; // expowertarray[servo] & 0x07;
    uint8_t expowertb = 0; //(expowertarray[servo] & 0x70) >> 4;
-
-   
 
    if (val < middle)
    {
@@ -1486,10 +1372,7 @@ void loop()
 {
    //
    loopcounter0++;
-   // digitalWrite(BUZZPIN,!(digitalRead(BUZZPIN)));
-   // tastaturwert = analogRead(TASTATUR_PIN)/2;
-   // tastaturwert = readTastatur(TASTATUR_PIN);
-   // tastaturwert = readTastatur(TASTATUR_PIN)/2;
+
    if (sincelasttastatur > 20)
    {
       // OSZIA_LO();
@@ -1504,40 +1387,7 @@ void loop()
    {
       // slaveISR;
       //  Einstellung Master/Slave
-     /* 
-      if (masterslavestatus & (1 << MASTERSLAVECHANGE))
-      {
-         Serial.print("slavecounter: ");
-          Serial.print(slavecounter&0x07);
-         
-         if (slavecounter > 2)
-         {
-            if (masterslavestatus & (1 << MASTER))
-            {
-               if (digitalRead(PPM_DIR_PIN) == 0) // umschalten auf Slave
-               {
-                  Serial.print("\t> MASTER");
-                  masterslavestatus &= ~(1 << MASTER);
-                  masterslavestatus |= (1 << SLAVE);
-               }
-            }
-            else if (digitalRead(PPM_DIR_PIN) == 1) // umschalten auf Master
-            {
-               Serial.print("\t> SLAVE");
-               masterslavestatus &= ~(1 << SLAVE);
-               masterslavestatus |= (1 << MASTER);
-            }
-            masterslavestatus &= ~(1 << MASTERSLAVECHANGE);
-            Serial.println();
-            slavecounter = 0;
-         }
-         else
-         {
-            slavecounter++;
-            Serial.println();
-         }
-      }
-      */
+     
      
      if (digitalRead(PPM_DIR_PIN) == 0) // Switch geschlossen, umschalten auf Slave
       {

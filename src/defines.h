@@ -23,6 +23,7 @@
 #define ANZEIGE_CALIB   2
 #define ANZEIGE_ADC     3
 #define ANZEIGE_SLAVE   4
+#define ANZEIGE_EEPROM  5
 
 #define ANZEIGE_LEVEL  5
 
