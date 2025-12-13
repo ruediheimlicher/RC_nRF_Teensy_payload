@@ -1109,7 +1109,7 @@ void setup()
 
    initDisplay();
 
-   oled_vertikalbalken(BATTX, BATTY, BATTB, BATTH);
+   //oled_vertikalbalken(BATTX, BATTY, BATTB, BATTH);
 
    setHomeScreen();
 
@@ -2471,17 +2471,17 @@ void loop()
 
          case ANZEIGE_ADC:
          {
-            /*
-            Serial.print("\tbatteriespannung raw: ");
+            
+            Serial.print("\tbattsp raw: ");
             Serial.print(batteriespannungraw);
            // Serial.print("\tbatteriespannung: ");
            // Serial.print(batteriespannung);
             Serial.print("\tUBatt: ");
             Serial.print(UBatt);
-            Serial.print("\tbatterieanzeige: ");
+            Serial.print("\tbattanz: ");
             Serial.print(batterieanzeige);
-            Serial.print("\t");
-            */
+            Serial.print("\t*");
+            
             Serial.print("\tack-Spannung: ");
             Serial.print(ackData[3]);
             Serial.print("\tflyerbattsp: ");
@@ -2535,31 +2535,8 @@ void loop()
          }
          break;
          }
-         /*
-         for (int i=0;i<NUM_SERVOS;i++)
-         {
-         Serial.print("delay: \t");
-         Serial.print(impulsdelayarray[i]);
-         Serial.print(" \tCCPM: \t");
-         Serial.print(impulsCCMParray[i]);
-
-         Serial.print("\t rest: \t");
-         Serial.print(restzeitarray[i]);
-         Serial.print("\trestCCPM: \t");
-         Serial.print(restCCM);
-         Serial.print("\t");
-
-         }
-         Serial.print("\n");
-         */
-         if (Taste)
-         {
-            ////Serial.print(tastaturwert);
-            ////Serial.print(" Taste: ");
-            // Serial.print(Taste);
-            // Serial.print("\n");
-         }
-
+        
+         
          // Serial.print(ackData[0]);
          // Serial.print("\t");
          // Serial.print("debouncecheck: ");
@@ -2584,7 +2561,7 @@ void loop()
             batteriespannung = batteriespannung + faktor * (batteriespannungraw - batteriespannung);
          }
          
-         UBatt = (batteriespannung) / 154;
+         UBatt = (batteriespannung) / 162;
 
          // batteriespannung = fmap(batteriespannung,60.0,900.0,0,44.0);
          // batteriespannung = analogRead(A6);
@@ -2637,32 +2614,9 @@ void loop()
             //Serial.print("\n");
             */
          }
-         // eepromread();
-         ///*
-         // u8g2.clearBuffer();                   // Clear display.
-         // u8x8.setFont(u8g2_font_ncenB08_tr);    // choose a suitable font
-         // u8x8.drawString(0, 24, "Hello OLED!");    // write something to the buffer
-         // u8x8.sendBuffer();
-         // u8g2.sendBuffer(); // Transfer buffer to screen.
-         //*/
-         /*
-         //Serial.print("blinkcounter: ");
-         //Serial.print(blinkcounter);
-
-         //Serial.print(" radiocounter: ");
-         //Serial.print(radiocounter);
-         //Serial.print(" errcounter: ");
-         //Serial.print(errcounter);
-         ////Serial.print(" impulscounter: ");
-         ////Serial.print(impulscounter);
-         */
-         /*
-         potwert += schritt;
-         if (potwert >= POTHI)
-         {
-         potwert = POTLO;
-         }
-         */
+         
+        
+         
          ////Serial.print(" M: ");
          // if(abs(servomittearray[ROLL] - potwertarray[ROLL]) > 2)
 
@@ -2675,42 +2629,8 @@ void loop()
 
          // u8g2.drawGlyph(32,44,'A'+(charindex));
          char buf0[4];
-         /*
-
-         // Yaw
-         //u8g2.setCursor(4,30);
-         //u8g2.print(data.yaw);
-         sprintf(buf0, "%3d", data.yaw);
-         u8g2.drawStr(4,30,buf0);
-
-         // Pitch
-         // u8g2.setCursor(36,30);
-         // u8g2.print(data.pitch);
-         sprintf(buf0, "%3d", data.pitch);
-         u8g2.drawStr(32,30,buf0);
-
-         // Roll
-         //u8g2.setCursor(4,46);
-         //u8g2.print(data.roll);
-         sprintf(buf0, "%3d", data.roll);
-         u8g2.drawStr(4,42,buf0);
-
-         // Throttle
-         //u8g2.setCursor(36,46);
-         //u8g2.print(data.throttle);
-         sprintf(buf0, "%3d", data.throttle);
-         u8g2.drawStr(32,42,buf0);
-         */
-
-         // uint8_t wertv = map(data.pitch,0,255,2,balkenvh-2); // Platz fuer 3 pixel dicke
-         // oled_vertikalbalken_setwert(VBX,VBY,balkenvb,balkenvh,wertv);
-
-         // uint8_t werth = map(data.yaw,0,255,2,balkenhb-2); // Platz fuer 3 pixel dicke
-
-         // oled_horizontalbalken_setwert(HBX,HBY,balkenhb,balkenhh,werth);
-
-         // batterieanzeige = (0x50*batteriespannung)/0x6B/8; // resp. /107
-         batterieanzeige = (0x50 * batteriespannung) / 0x9A / 8; // integer-operation, resp. /154 als float
+         
+         batterieanzeige = (0x4C * batteriespannung) / 0x9A / 8; // integer-operation, resp. /162 als float
 
          /*
          Serial.print(batteriespannung);
@@ -2818,7 +2738,7 @@ void loop()
       }
    } // BLINKRATE
    // EEPROM
-   eepromtaste.update();
+   //eepromtaste.update();
 
    if (UBatt < 4.07)
    {
@@ -2851,8 +2771,7 @@ void loop()
                savestatus = CHANGED;
             }
          }
-         // potgrenzearray[0][0] = 17;
-         // potgrenzearray[0][1] = 33;
+
 
          uint16_t mitte = servomittearray[i];
          uint8_t levelwert = kanalsettingarray[curr_model][i][1]; // element 1, levelarray
@@ -2951,12 +2870,6 @@ void loop()
       }
 
       //data.yaw = Border_Mapvar255(YAW, potwertarray[YAW], potgrenzearray[YAW][1], servomittearray[YAW], potgrenzearray[YAW][0], false);
-
-      
-      
-      
-      
-      
       
       /*
       winkelcounter+= 2;
@@ -3013,13 +2926,6 @@ void loop()
 
       data.throttle = Border_Mapvar255_Throttle(THROTTLE, potwertarray[THROTTLE], potgrenzearray[THROTTLE][1], potgrenzearray[THROTTLE][0], false);
 
-      // data.yaw = 13;
-      // data.pitch = int(sinfloat);
-      // data.roll = 14;
-      // data.throttle = 15;
-
-      // data.throttle = Border_Map(potwertarray[THROTTLE],0, 340,570, false );      // Potentiometer
-
       data.aux1 = digitalRead(5); // CH5
       data.aux2 = digitalRead(7); // CH6
       // OSZIA_LO();
@@ -3037,7 +2943,7 @@ void loop()
             temperaturfloat = temperaturint/10;
             pressureint = ((ackData[1] << 8) | ackData[2]) ;
             
-            pressurefloat = pressureint  ; // 
+            pressurefloat = pressureint / 10; // 
             altitude = getAltitude(pressurefloat,temperaturfloat);
             altitudeint = altitude;
             /*
