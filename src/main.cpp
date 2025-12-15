@@ -33,7 +33,7 @@ int Border_Mapvar255_slave(int val, int lower, int middle, int upper, bool rever
 uint16_t loopcounter0 = 0;
 uint16_t loopcounter1 = 0;
 
-#define RAMPETEST 0
+#define RAMPETEST 1
 #define TEST 0
 #define CE_PIN 8 // Teensy_FS: Pin 9
 #define CSN_PIN 10
@@ -192,6 +192,13 @@ const float seaLevelPressure = 1013.25;
 
 float altitude = 0;
 uint16_t altitudeint = 0;
+
+float startaltitude = 0;
+uint16_t startaltitudeint = 0;
+
+uint16_t diffaltitudeint = 0;
+
+
 
 uint16_t temperaturint = 0;
 float temperaturfloat = 0;
@@ -855,7 +862,7 @@ uint16_t readADC_A6()
 // https://forum.arduino.cc/t/ms5611-pressure-problem/543358/6
 float getAltitude(float press, float temp)
 {
-   return ((pow((seaLevelPressure / press), 1.0 / 5.257) - 1.0) * (temp + 273.15)) / 0.0065;
+   return ((pow((seaLevelPressure / press), (1.0 / 5.257)) - 1.0) * (temp + 273.15)) / 0.0065;
 }
 
 uint8_t Joystick_Tastenwahl_33_6(uint16_t Tastaturwert)
@@ -1463,6 +1470,7 @@ void loop()
       {
       case 0: // null-pos, nichts tun
       {
+        
       }
       break;
       case 1:
@@ -1472,7 +1480,15 @@ void loop()
          {
          case 0:
          {
-            // slaveeepromwrite();
+
+            startaltitude = altitude;
+            startaltitudeint = altitudeint;
+            if(altitude > startaltitude)
+            {
+               diffaltitudeint = altitude - startaltitude;
+            }
+            
+            updateHomeScreen();
          }
          break;
          case 1: // MENUSCREEN
@@ -2457,11 +2473,7 @@ void loop()
 
                }
                Serial.print("\t");
-               for (uint8_t i = 0; i < NUM_SERVOS; i++)
-               {
-                  //Serial.print("\t");
-                  //Serial.print(Slavechannelmittearray[i]);
-               }
+               
                Serial.print("\tslavedelaycounter\t");
                Serial.print(slavedelaycounter);
                Serial.print("\n");
@@ -2471,7 +2483,7 @@ void loop()
 
          case ANZEIGE_ADC:
          {
-            
+            /*
             Serial.print("\tbattsp raw: ");
             Serial.print(batteriespannungraw);
            // Serial.print("\tbatteriespannung: ");
@@ -2490,6 +2502,7 @@ void loop()
             Serial.print(UFlyerBatt);
             Serial.print("\tflyerbattanz ");
             Serial.print(flyerbatterieanzeige);
+            */
             Serial.print("\tpressureint: ");
             Serial.print(pressureint);
             Serial.print("\tpressurefloat: ");
@@ -2566,8 +2579,9 @@ void loop()
          // batteriespannung = fmap(batteriespannung,60.0,900.0,0,44.0);
          // batteriespannung = analogRead(A6);
          //      batteriespannung = analogRead(A1);
-
+         /*
          flyerbatteriespannungraw = float(ackData[3]);
+
 
          if (flyerbatteriespannung == 0)
          {
@@ -2577,10 +2591,18 @@ void loop()
          {
             flyerbatteriespannung = flyerbatteriespannung + faktor * (flyerbatteriespannungraw - flyerbatteriespannung);
          }
-         flyerbatteriespannung = constrain(flyerbatteriespannung, 60, 240);
-         UFlyerBatt = fmap(flyerbatteriespannung, 60.0, 240.0, 0, 44.0);
 
-         flyerbatterieanzeige = (uint16_t)UFlyerBatt;
+         flyerbatteriespannung = constrain(flyerbatteriespannung, 60, 240);
+        */
+         flyerbatteriespannung = float(ackData[3]);
+         // y = 0.0135x + 5.1213
+
+
+         
+         //UFlyerBatt = fmap(flyerbatteriespannung, 60.0, 240.0, 0, 44.0);
+         UFlyerBatt = 0.0135 * flyerbatteriespannung + 5.1213;
+
+         flyerbatterieanzeige = fmap(flyerbatteriespannung, 60.0, 240.0, 0, 44.0);;
 
          /*
          Serial.print(batteriemittel);
@@ -2833,11 +2855,8 @@ void loop()
          }
       } // for i
       //if(Slavechannelarray[YAW] )
-      yaw_slave = lerp(Slavechannelarray[YAW],yaw_slave,0.5);;
-
-      
+      yaw_slave = lerp(Slavechannelarray[YAW],yaw_slave,0.5);
       yaw_master = Border_Mapvar255(YAW, potwertarray[YAW], potgrenzearray[YAW][1], servomittearray[YAW], potgrenzearray[YAW][0], false);
-
       if(masterslavestatus & (1 << MASTER)) //
       {
          data.yaw = yaw_master;
@@ -2845,7 +2864,6 @@ void loop()
       }
       else 
       {
-
          if(abs(yaw_master - 127 ) < 8)
          {
             if(slavedelaycounter)
@@ -2854,14 +2872,10 @@ void loop()
             }
             else 
             {
-
                //data.yaw = lerp(yaw_master,yaw_slave,0.5);
                data.yaw = yaw_slave;
             }
-         
-            
          }
-
          else
          {
             slavedelaycounter = 100;
@@ -2871,11 +2885,13 @@ void loop()
 
       //data.yaw = Border_Mapvar255(YAW, potwertarray[YAW], potgrenzearray[YAW][1], servomittearray[YAW], potgrenzearray[YAW][0], false);
       
-      /*
+      
       winkelcounter+= 2;
 
       // uint8_t delta = winkelcounter % 127;
+      rampe++;
       rampe = rampe + (2 * ramprichtung);
+
       if(rampe > 250)
       {
          ramprichtung = -1;
@@ -2885,7 +2901,11 @@ void loop()
          ramprichtung = 1;
       }
 
-
+      if (RAMPETEST)
+      {
+         data.yaw = rampe;
+      }
+      /*
 
       //float winkel = float(winkelcounter)/180.0 * 3.14;
 
@@ -2902,10 +2922,7 @@ void loop()
       data.pitch = Border_Mapvar255(PITCH, potwertarray[PITCH], potgrenzearray[PITCH][1], servomittearray[PITCH], potgrenzearray[PITCH][0], false);
       // data.pitch = int(sinfloat);
 
-      if (RAMPETEST)
-      {
-         data.pitch = rampe;
-      }
+      
 
       // Serial.println(data.pitch);
       // data.pitch = servomittearray[PITCH] +
@@ -2943,7 +2960,7 @@ void loop()
             temperaturfloat = temperaturint/10;
             pressureint = ((ackData[1] << 8) | ackData[2]) ;
             
-            pressurefloat = pressureint / 10; // 
+            pressurefloat = float(pressureint) / 10; // 
             altitude = getAltitude(pressurefloat,temperaturfloat);
             altitudeint = altitude;
             /*

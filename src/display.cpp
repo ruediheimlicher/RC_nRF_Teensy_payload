@@ -8,7 +8,7 @@
 
 //extern uint16_t currentexpoarray[5][513];
 
-extern uint8_t kanalsettingarray[5][4][4];
+extern uint8_t                   kanalsettingarray[5][4][4];
 
 extern  uint8_t                 curr_model; // aktuelles modell
 extern  uint8_t                 speichermodel;
@@ -39,16 +39,22 @@ extern uint8_t                   calibstatus;
 
 extern uint16_t                   batteriespannung;
 
-extern uint16_t pressureint;
-extern uint16_t temperaturint;
-extern float pressurefloat;
-extern float temperaturfloat;
-extern float altitude;
-extern uint16_t altitudeint;
+extern uint16_t                  pressureint;
+extern uint16_t                  temperaturint;
+extern float                     pressurefloat;
+extern float                     temperaturfloat;
+extern float                     altitude;
+extern uint16_t                  altitudeint;
+
+extern float                     startaltitude;
+extern uint16_t                  startaltitudeint;
+extern uint16_t                  diffaltitudeint;
 
 
-#define BLINKPFEILUP    0
-#define BLINKPFEILDOWN    1
+
+
+#define BLINKPFEILUP             0
+#define BLINKPFEILDOWN           1
 
 extern uint8_t                      calibstatus;
 
@@ -99,9 +105,11 @@ extern  uint8_t taby[8] = {taby0,taby1,taby2,taby3,taby4,taby5,taby6,taby7};
 
 #define menuh 20
 
-extern float UBatt;
-extern uint16_t batterieanzeige;
-extern uint16_t flyerbatterieanzeige;
+extern float      UBatt;
+extern uint16_t   batterieanzeige;
+
+extern float      UFlyerBatt;
+extern uint16_t   flyerbatterieanzeige;
 
 
 extern Signal data;
@@ -236,10 +244,14 @@ void oled_flyerbatteriebalken_setwert(uint8_t x,uint8_t y, uint8_t b, uint8_t h,
 
 void oled_setBatterieWert(uint8_t x,uint8_t y, uint8_t b, uint8_t h,float wert)
 {
+   u8g2.setFontDirection(3);
+         u8g2.setFont(u8g2_font_t0_11_mr);  
+
       u8g2.setCursor(x,y);
-      u8g2.setDrawColor(0);
+      //u8g2.setDrawColor(0);
       u8g2.print(wert,1);
       u8g2.setDrawColor(1);
+      u8g2.setFontDirection(0);
 }
 
 void oled_horizontalbalken(uint8_t x,uint8_t y, uint8_t b, uint8_t h)
@@ -398,29 +410,45 @@ void updateHomeScreen()
       
 
      char buf1[5];
-      sprintf(buf1, "%3d", pressureint);
-      u8g2.drawStr(TAB0+28,64,buf1);
+      sprintf(buf1, "%3d", pressureint-9000);
+      //u8g2.drawStr(TAB0+28,64,buf1);
 
       sprintf(buf1, "%3d", altitudeint); // alt
     //  sprintf(buf1, "%3d", 1234); // alt
 
-      u8g2.drawStr(TAB0+64,64,buf1);
+      u8g2.drawStr(TAB0+34,64,buf1);
+
+       sprintf(buf1, "%3d", startaltitudeint); // alt
+       u8g2.drawStr(TAB0+64,64,buf1);
+
+      
+      sprintf(buf1, "%3d", diffaltitudeint); // diffalt
+       u8g2.setFont(u8g2_font_logisoso22_tf);  
+      u8g2.drawStr(TAB0,46,buf1);
+
+      u8g2.setFont(u8g2_font_t0_15_mr); 
+       
+
+
 
    }   
       uint8_t p = curr_model;
 
+      //
+      oled_batteriebalken_setwert(BATTX,BATTY+8,BATTB,BATTH+1,batterieanzeige);
 
-      oled_batteriebalken_setwert(BATTX,BATTY,BATTB,BATTH+1,batterieanzeige);
-         
+      oled_setBatterieWert(BATTX+8,BATTY+BATTH+18,BATTB+18,14,UBatt);
+      
       //oled_flyerbatteriebalken_setwert(BATTX,BATTY,BATTB,BATTH+1,batterieanzeige);
 
       u8g2.setFont(u8g2_font_t0_14_mr);  
          
 
       oled_flyerbatteriebalken_setwert(FLYBATTX,FLYBATTY,FLYBATTB,FLYBATTH,flyerbatterieanzeige);
-      u8g2.setFont(u8g2_font_t0_14_mr);  
-         
-         //oled_setBatterieWert(BATTX,BATTY+BATTH+16,BATTB,26,UBatt);
+      
+      oled_setBatterieWert(FLYBATTX+8,FLYBATTY+FLYBATTH+18,FLYBATTB+18,14,UFlyerBatt);
+      
+   
 
 
       u8g2.setFont(u8g2_font_t0_15_mr);  
@@ -924,20 +952,20 @@ void refreshScreen(void)
             sprintf(buf, "%2d:%2d",stopminute,stopsekunde);
          }
          
-         u8g2.drawStr(60,34,buf);
+         u8g2.drawStr(50,34,buf);
 
          //u8g2.setCursor(62,28);
          //u8g2.print(throttlecounter);
 
          //sprintf(buf,"%1.0F", throttlesekunden);
 
-         u8g2.setCursor(62,48);
+         u8g2.setCursor(52,48);
          u8g2.print("T:");
          sprintf(buf, "%3d",throttlesekunden);
          u8g2.setDrawColor(0);
-         u8g2.drawBox(76,36,26,12);
+         u8g2.drawBox(66,36,26,12);
          u8g2.setDrawColor(1);
-         u8g2.drawStr(76,48,buf);
+         u8g2.drawStr(66,48,buf);
 
 
          u8g2.sendBuffer();
