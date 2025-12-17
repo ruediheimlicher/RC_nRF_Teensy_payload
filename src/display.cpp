@@ -421,9 +421,12 @@ void updateHomeScreen()
        sprintf(buf1, "%3d", startaltitudeint); // alt
        u8g2.drawStr(TAB0+64,64,buf1);
 
-      
+      u8g2.setDrawColor(0);
+      u8g2.drawBox(TAB0,22 ,44,26);
+      u8g2.setDrawColor(1);
       sprintf(buf1, "%3d", diffaltitudeint); // diffalt
-       u8g2.setFont(u8g2_font_logisoso22_tf);  
+
+      u8g2.setFont(u8g2_font_logisoso22_tf);  
       u8g2.drawStr(TAB0,46,buf1);
 
       u8g2.setFont(u8g2_font_t0_15_mr); 

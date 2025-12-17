@@ -33,7 +33,7 @@ int Border_Mapvar255_slave(int val, int lower, int middle, int upper, bool rever
 uint16_t loopcounter0 = 0;
 uint16_t loopcounter1 = 0;
 
-#define RAMPETEST 1
+#define RAMPETEST 0
 #define TEST 0
 #define CE_PIN 8 // Teensy_FS: Pin 9
 #define CSN_PIN 10
@@ -217,6 +217,7 @@ uint8_t mittelposition = 0;
 
 uint16_t winkelcounter = 0;
 uint8_t rampe = 0;
+uint8_t rampeB = 0;
 int8_t ramprichtung = 1;
 
 uint8_t tastencounter = 0;
@@ -1050,7 +1051,7 @@ void setCalib(void)
 
 void setup()
 {
-   anzeigestatus = ANZEIGE_ADC;
+   anzeigestatus = ANZEIGE_POT;
 
    masterslavestatus |= (1 << MASTER);
    uint8_t ee[16];
@@ -1485,7 +1486,7 @@ void loop()
             startaltitudeint = altitudeint;
             if(altitude > startaltitude)
             {
-               diffaltitudeint = altitude - startaltitude;
+               //diffaltitudeint = altitudeint - startaltitudeint;
             }
             
             updateHomeScreen();
@@ -2413,6 +2414,14 @@ void loop()
 
             Serial.print("\tA2\t");
             Serial.print(ackData[2]);
+
+            uint16_t p = (ackData[1] << 8) | ackData[2];
+            float pfloat = p/10.0;
+            Serial.print("\tpress\t");
+            Serial.print(p);
+            Serial.print("\tpressfloat\t");
+            Serial.print(pfloat);
+
             Serial.print("\tA3\t");
             Serial.print(ackData[3]);
             // Serial.print("\t\t");
@@ -2559,8 +2568,10 @@ void loop()
          blinkcounter++;
          impulscounter += 16;
          // digitalWrite(LOOPLED, ! digitalRead(LOOPLED));
-         float faktor = 0.1;
+         float faktor = 0.2;
          // analogWrite(BUZZPIN,127);
+
+         
 
          // batteriespannung = readADC_A6();
          batteriespannungraw = (float)analogRead(A9);
@@ -2900,14 +2911,17 @@ void loop()
       {
          ramprichtung = 1;
       }
-
-      if (RAMPETEST)
+      if(ramprichtung == 1)
       {
-         data.yaw = rampe;
+         rampeB = 147;
       }
-      /*
+      else
+      {
+            rampeB = 107;
+      }
+      
 
-      //float winkel = float(winkelcounter)/180.0 * 3.14;
+      float winkel = float(winkelcounter)/180.0 * 3.14;
 
       //Serial.print(winkelcounter);
       //Serial.print("\t");
@@ -2915,14 +2929,18 @@ void loop()
       //Serial.print("\t");
 
 
-      //double sinfloat = 127.0 + 125.0*sin(winkel/2);
+      double sinfloat = 127.0 + 125.0*sin(winkel/2);
       //Serial.print(sinfloat);
       //Serial.print("\t");
-      */
+      
       data.pitch = Border_Mapvar255(PITCH, potwertarray[PITCH], potgrenzearray[PITCH][1], servomittearray[PITCH], potgrenzearray[PITCH][0], false);
       // data.pitch = int(sinfloat);
 
-      
+      if (RAMPETEST)
+      {
+         data.pitch = rampe;
+         data.yaw = int(sinfloat);
+      }
 
       // Serial.println(data.pitch);
       // data.pitch = servomittearray[PITCH] +
@@ -2963,6 +2981,12 @@ void loop()
             pressurefloat = float(pressureint) / 10; // 
             altitude = getAltitude(pressurefloat,temperaturfloat);
             altitudeint = altitude;
+            if(startaltitudeint)
+            {
+               diffaltitudeint = altitudeint - startaltitudeint;
+               updateHomeScreen();
+            }
+            
             /*
              //Serial.print("ACK erhalten: ");
              //Serial.print("\t");
