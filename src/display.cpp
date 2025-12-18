@@ -422,7 +422,7 @@ void updateHomeScreen()
        u8g2.drawStr(TAB0+64,64,buf1);
 
       u8g2.setDrawColor(0);
-      u8g2.drawBox(TAB0,22 ,44,26);
+      u8g2.drawBox(TAB0,22 ,46,26);
       u8g2.setDrawColor(1);
       sprintf(buf1, "%3d", diffaltitudeint); // diffalt
 
