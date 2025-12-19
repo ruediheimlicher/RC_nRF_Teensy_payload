@@ -215,8 +215,6 @@ void oled_batteriebalken_setwert(uint8_t x,uint8_t y, uint8_t b, uint8_t h,uint1
   u8g2.setDrawColor(1);
 
 
-       // Batt
-      //sprintf(buf1, "%1.1f", UBatt);
 
 }
 
@@ -410,7 +408,7 @@ void updateHomeScreen()
       
 
      char buf1[5];
-      sprintf(buf1, "%3d", pressureint-9000);
+      //sprintf(buf1, "%3d", pressureint-9000);
       //u8g2.drawStr(TAB0+28,64,buf1);
 
       sprintf(buf1, "%3d", altitudeint); // alt

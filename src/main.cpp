@@ -2590,21 +2590,7 @@ void loop()
          // batteriespannung = fmap(batteriespannung,60.0,900.0,0,44.0);
          // batteriespannung = analogRead(A6);
          //      batteriespannung = analogRead(A1);
-         /*
-         flyerbatteriespannungraw = float(ackData[3]);
-
-
-         if (flyerbatteriespannung == 0)
-         {
-            flyerbatteriespannung = flyerbatteriespannungraw;
-         }
-         else
-         {
-            flyerbatteriespannung = flyerbatteriespannung + faktor * (flyerbatteriespannungraw - flyerbatteriespannung);
-         }
-
-         flyerbatteriespannung = constrain(flyerbatteriespannung, 60, 240);
-        */
+         
          flyerbatteriespannung = float(ackData[3]);
          // y = 0.0135x + 5.1213
 
@@ -2615,15 +2601,15 @@ void loop()
 
          flyerbatterieanzeige = fmap(flyerbatteriespannung, 60.0, 240.0, 0, 44.0);;
 
-         /*
-         Serial.print(batteriemittel);
-         Serial.print("\t");
-         Serial.print(batteriespannung);
-         Serial.print(" *\t ");
-         Serial.print(data.pitch);
+         
+         //Serial.print(batteriemittel);
+         //Serial.print("\t");
+         //Serial.print(batteriespannung);
+         //Serial.print(" *\t ");
+        // Serial.print(data.pitch);
 
-         Serial.print("\n");
-         */
+         
+         //Serial.print("\n");
 
          if (TEST)
          {
@@ -2984,7 +2970,7 @@ void loop()
             if(startaltitudeint)
             {
                diffaltitudeint = altitudeint - startaltitudeint;
-               updateHomeScreen();
+               //updateHomeScreen();
             }
             
             /*

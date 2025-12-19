@@ -1,3 +1,4 @@
 {
-    "git.ignoreLimitWarning": true
+    "git.ignoreLimitWarning": true,
+    "cmake.sourceDirectory": "/Users/ruediheimlicher/Documents/Elektronik/RC_nRF/RC_nRF_Teensy_payload/lib/RF24-master"
 }

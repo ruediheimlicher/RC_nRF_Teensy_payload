@@ -8,6 +8,10 @@
 		},
 		{
 			"path": "../../RC_nRF_Atmega/RC_nRF24_R_A328_smd_payload"
+		},
+		{
+			"name": "RC_nRF_T_every_payload",
+			"path": "../../RC_nRF_T_every_payload"
 		}
 	],
 	"settings": {
