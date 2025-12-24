@@ -12,6 +12,10 @@
 		{
 			"name": "RC_nRF_T_every_payload",
 			"path": "../../RC_nRF_T_every_payload"
+		},
+		{
+			"name": "RC_nRF_FS_Teensy",
+			"path": "../../RC_nRF_FS_Teensy"
 		}
 	],
 	"settings": {

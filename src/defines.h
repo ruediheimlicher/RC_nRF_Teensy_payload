@@ -25,7 +25,8 @@
 #define ANZEIGE_SLAVE   4
 #define ANZEIGE_EEPROM  5
 
-#define ANZEIGE_LEVEL  5
+#define ANZEIGE_LEVEL  6
+#define ANZEIGE_DATA    7
 
 #define HOMESCREEN      0
 #define MODELLSCREEN    1 // SYMPEL, TROTTLE ...
