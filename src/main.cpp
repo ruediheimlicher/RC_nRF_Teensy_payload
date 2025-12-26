@@ -421,7 +421,7 @@ const byte maxChannels = 8;
 
 
 
-void slaveplugISR()
+void slaveplugISR() // nicht verwendet
 {
    Serial.print("slaveplugISR status: ");
    uint8_t status = masterslavestatus & (0x03);
@@ -1051,7 +1051,7 @@ void setCalib(void)
 
 void setup()
 {
-   anzeigestatus = ANZEIGE_POT;
+   anzeigestatus = ANZEIGE_SLAVE;
    
    masterslavestatus |= (1 << MASTER);
    uint8_t ee[16];
@@ -1401,18 +1401,20 @@ void loop()
       {
          if (masterslavestatus & (1 << MASTER)) // war bisher master
          {
-            Serial.println("\t> SLAVE");
+            //Serial.println("\t> SLAVE");
             masterslavestatus &= ~(1 << MASTER);
             masterslavestatus |= (1 << SLAVE);
+            //refresh_MS(MASTER);
          }
       }
       else // Schalter offen, umschalten auf Master
       {
          if (masterslavestatus & (1 << SLAVE)) // war bisher slave
          {
-            Serial.println("\t> MASTER");
+            //Serial.println("\t> MASTER");
             masterslavestatus &= ~(1 << SLAVE);
             masterslavestatus |= (1 << MASTER);
+            //refresh_MS(SLAVE);
          }
       }
       
@@ -2505,6 +2507,8 @@ void loop()
                   Serial.print("ANZEIGE_SLAVE Slavechannelarray: \t");
                   for (uint8_t i = 0; i < NUM_SERVOS; i++)
                   {
+                     if(i==YAW)
+                     {
                      Serial.print("\tslave ");
                      Serial.print(i);
                      Serial.print("\t");
@@ -2512,6 +2516,11 @@ void loop()
                      Serial.print("\tPOT\t");
                      uint16_t p = Border_Mapvar255(i, potwertarray[i], potgrenzearray[i][1], servomittearray[i], potgrenzearray[i][0], false);
                      Serial.print(p);
+                     
+                        Serial.print("\tout\t");
+                        Serial.print(data.yaw);
+                     }
+                  
                      
                      
                   }
@@ -2885,7 +2894,8 @@ void loop()
          }
       } // for i
       //if(Slavechannelarray[YAW] )
-      yaw_slave = lerp(Slavechannelarray[YAW],yaw_slave,0.5);
+      //yaw_slave = lerp(Slavechannelarray[YAW],yaw_slave,0.5);
+      yaw_slave = Slavechannelarray[YAW];
       yaw_master = Border_Mapvar255(YAW, potwertarray[YAW], potgrenzearray[YAW][1], servomittearray[YAW], potgrenzearray[YAW][0], false);
       if(masterslavestatus & (1 << MASTER)) //
       {

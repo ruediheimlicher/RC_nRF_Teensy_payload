@@ -936,6 +936,8 @@ void updateModusScreen(void)
 
 }
 
+
+
 void refreshScreen(void)
 {
 
@@ -996,6 +998,21 @@ void refreshScreen(void)
          u8g2.setFont(u8g2_font_t0_15_mr);  
       }break;
    }
+}
+
+void refresh_MS(uint8_t status)
+{
+   if (status == 0)
+   {
+      u8g2.setCursor(70,18);
+      u8g2.print("M");
+   }
+   else
+   {
+      u8g2.setCursor(70,18);
+      u8g2.print("S");
+   }
+   u8g2.sendBuffer();
 }
 
 void setCalibScreen(void)

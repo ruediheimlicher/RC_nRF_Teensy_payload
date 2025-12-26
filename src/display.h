@@ -23,6 +23,8 @@ extern uint8_t savestatus;
 
 extern uint8_t ackData[4];
 
+extern volatile uint8_t masterslavestatus;
+
 extern U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2;
 
 void initDisplay();
@@ -54,6 +56,7 @@ void setAktionScreen(void);
 void updateAktionScreen(void);
 
 void refreshScreen(void);
+void refresh_MS(uint8_t status);
 
 void setSaveScreen(void);
 
