@@ -2390,7 +2390,8 @@ void loop()
                Serial.print("\tYAW  slave\t");
                uint16_t yawslave = Slavechannelarray[0];
                Serial.print(yawslave);
-               
+               Serial.print("\tout\t");
+               Serial.print(data.yaw);
                
                Serial.print("\tPITCH\t");
                Serial.print(data.pitch);
@@ -2403,8 +2404,10 @@ void loop()
                Serial.print(data.throttle);
                //Serial.print("\tTH slave\t");
                //Serial.print(Slavechannelarray[3]);
+
+
                
-               
+               /*
                Serial.print("\tA0\t");
                Serial.print(ackData[0]);
                Serial.print("\tA1\t");
@@ -2425,6 +2428,7 @@ void loop()
                Serial.print("\tA3\t");
                Serial.print(ackData[3]);
                // Serial.print("\t\t");
+               */
                Serial.print("\n");
             }break;
 
