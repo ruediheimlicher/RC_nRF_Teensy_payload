@@ -1051,7 +1051,7 @@ void setCalib(void)
 
 void setup()
 {
-   anzeigestatus = ANZEIGE_POT;
+   anzeigestatus = ANZEIGE_SLAVE;
    
    masterslavestatus |= (1 << MASTER);
    uint8_t ee[16];
@@ -1086,7 +1086,7 @@ void setup()
    curr_steuerstatus = MODELL;
    // savestatus = 0xFF;
    
-   delay(100);
+   _delay_ms(100);
    
    // Serial.println(__DATE__);
    // Serial.println(__TIME__);
@@ -1095,12 +1095,13 @@ void setup()
    
    attachInterrupt(digitalPinToInterrupt(PPM_DATA_PIN), slaveISR, RISING);
    int irq = digitalPinToInterrupt(PPM_DATA_PIN);
-   NVIC_SET_PRIORITY(irq, 0);
+   //VIC_SET_PRIORITY(irq, 0);
    
    
    printeeprom(240);
    
    eepromread();
+   _delay_ms(100);
    
    pinMode(BUZZPIN, OUTPUT);
    
@@ -1116,11 +1117,14 @@ void setup()
    // 0.96"
    
    initDisplay();
+   _delay_ms(100);
    
    //oled_vertikalbalken(BATTX, BATTY, BATTB, BATTH);
    
    setHomeScreen();
    
+   _delay_ms(100);
+
    //                Configure the NRF24 module  | NRF24 modül konfigürasyonu
    radio.begin();
    
@@ -2509,6 +2513,8 @@ void loop()
                   Serial.print("ANZEIGE_SLAVE Slavechannelarray: \t");
                   for (uint8_t i = 0; i < NUM_SERVOS; i++)
                   {
+                     if (i==YAW)
+                     {
                      Serial.print("\tslave ");
                      Serial.print(i);
                      Serial.print("\t");
@@ -2516,7 +2522,9 @@ void loop()
                      Serial.print("\tPOT\t");
                      uint16_t p = Border_Mapvar255(i, potwertarray[i], potgrenzearray[i][1], servomittearray[i], potgrenzearray[i][0], false);
                      Serial.print(p);
-                     
+                     Serial.print("\tout\t");
+                     Serial.print(data.yaw);
+                     }
                      
                   }
                   Serial.print("\t");
@@ -2678,7 +2686,7 @@ void loop()
          
          // 0.96
          loopcounter1++;
-         uint8_t charindex = loopcounter1 & 0x7F;
+         //uint8_t charindex = loopcounter1 & 0x7F;
          // u8g2.setDrawColor(0);
          // charh = u8g2.getMaxCharHeight() ;
          // oled_delete(4,44,64);
@@ -2698,11 +2706,11 @@ void loop()
          
          if (curr_screen == 0)
          {
-            updateHomeScreen();
-            u8g2.sendBuffer();
+            //updateHomeScreen();
+            //u8g2.sendBuffer();
          }
          
-         if (loopcounter1 > 25)
+         //if (loopcounter1 > 50)
          {
             // loopcounter1 = 0;
          }
@@ -2889,14 +2897,18 @@ void loop()
          }
       } // for i
       //if(Slavechannelarray[YAW] )
+
+      
       yaw_slave = lerp(Slavechannelarray[YAW],yaw_slave,0.5);
       yaw_master = Border_Mapvar255(YAW, potwertarray[YAW], potgrenzearray[YAW][1], servomittearray[YAW], potgrenzearray[YAW][0], false);
+      /*
       if(masterslavestatus & (1 << MASTER)) //
       {
          data.yaw = yaw_master;
          slavedelaycounter = 100;
       }
       else 
+      */
       {
          if(abs(yaw_master - 127 ) < 8)
          {
@@ -2952,7 +2964,7 @@ void loop()
       //Serial.print("\t");
       
       
-      double sinfloat = 127.0 + 125.0*sin(winkel/2);
+      double sinfloat =  127.0 + 125.0*sin(winkel/2);
       //Serial.print(sinfloat);
       //Serial.print("\t");
       
@@ -3010,7 +3022,7 @@ void loop()
             if(startaltitudeint)
             {
                diffaltitudeint = altitudeint - startaltitudeint;
-               //updateHomeScreen();
+               updateHomeScreen();
             }
             
             /*
