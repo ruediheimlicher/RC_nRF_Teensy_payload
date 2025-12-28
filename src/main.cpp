@@ -79,9 +79,24 @@ volatile uint16_t slaveimpulstimearray[NUM_SERVOS] = {};
 int16_t yaw_slave = 127;
 int16_t yaw_master = 127;
 
+int16_t pitch_slave = 127;
+int16_t pitch_master = 127;
+
+int16_t roll_slave = 127;
+int16_t roll_master = 127;
+
+int16_t throttle_slave = 127;
+int16_t throttle_master = 127;
+
 // Decoder
 uint16_t Slavechannelarray[NUM_SERVOS] = {};
-uint16_t Slavechannelmittearray[NUM_SERVOS] = {};
+
+uint16_t Slavechannelarrayraw[NUM_SERVOS] = {};
+
+uint16_t Slavemittearray[NUM_SERVOS] = {};
+
+uint16_t slavepotgrenzearray[NUM_SERVOS][2]; // obere und untere Grenze von adc
+
 
 volatile uint8_t slaveindex = 0;
 volatile uint32_t last = 0;
@@ -345,11 +360,7 @@ void ResetData()
    data.aux2 = 0;
 }
 
-// ppm encode
-// Timer-ISR
 
-// V2
-// ISR für TCB0
 
 void OSZIA_HI(void)
 {
@@ -395,6 +406,7 @@ volatile uint32_t t_last = 0;
 volatile uint16_t ch[4];
 volatile uint8_t ch_idx = 0;
 
+/*
 void isr_ppm() {
    uint32_t t = ARM_DWT_CYCCNT;       // 600 MHz → 1 Cycle ≈ 1.67 ns
    uint32_t dt = t - t_last;
@@ -411,7 +423,7 @@ void isr_ppm() {
    Slavechannelarray[ch_idx] = dt / 600;             // 600 cycles = 1 µs
    if (ch_idx < 4) ch_idx++;
 }
-
+*/
 
 volatile unsigned long lastTime = 0;
 volatile unsigned long pulseLength = 0;
@@ -447,11 +459,12 @@ void slaveISR()
    {
       if ((calibstatus & (1 << CALIB_START)))
       {
-         Slavechannelmittearray[slaveindex] = dur;
+         Slavemittearray[slaveindex] = dur;
       }
       OSZIA_HI();
+      Slavechannelarrayraw[slaveindex] = dur; 
       // red mit mitte von slave
-      uint8_t red = Border_Mapvar255_slave(dur, 1000, Slavechannelmittearray[slaveindex], 2000, false);
+      uint8_t red = Border_Mapvar255_slave(dur, 1100, Slavemittearray[slaveindex], 2000, false);
       
       Slavechannelarray[slaveindex] = red; // Kanalwert speichern
       slaveindex++;
@@ -604,7 +617,7 @@ void eepromread()
       Serial.print(slavemitte);
       Serial.print(" *\n");
       
-      Slavechannelmittearray[i] = (eh << 8) | el;
+      Slavemittearray[i] = (eh << 8) | el;
       
       if (i == 0)
       {
@@ -684,7 +697,7 @@ void slaveeepromwrite(void)
       Serial.print(slavemitte);
       Serial.print(" *\n");
       
-      Slavechannelmittearray[i] = (eh << 8) | el;
+      Slavemittearray[i] = (eh << 8) | el;
    }
    Serial.print("slaveeepromwrite end\n");
 }
@@ -758,8 +771,8 @@ void eepromwrite(void)
       
       if(anzeigestatus & ANZEIGE_EEPROM)
       {
-         Serial.print("write Slavechannelmittearray:\t");
-         Serial.print(Slavechannelmittearray[i]);
+         Serial.print("write Slavemittearray:\t");
+         Serial.print(Slavemittearray[i]);
          Serial.print("\t");
          Serial.print("adresse lo:\t");
          Serial.print(adrlo);
@@ -768,14 +781,14 @@ void eepromwrite(void)
          Serial.print(adrhi);
          Serial.print("\t");
          Serial.print("data:\t");
-         Serial.print(Slavechannelmittearray[i]);
+         Serial.print(Slavemittearray[i]);
       }
       
       Serial.print(" *\n");
-      EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M), Slavechannelmittearray[i] & 0x00FF); // slave mitte LO
+      EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M), Slavemittearray[i] & 0x00FF); // slave mitte LO
       
       _delay_ms(1);
-      EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M) + 1, ((Slavechannelmittearray[i] & 0xFF00) >> 8)); // slave mitte HI
+      EEPROM.update(2 * (i + EEPROMSLAVEINDEX_M) + 1, ((Slavemittearray[i] & 0xFF00) >> 8)); // slave mitte HI
       
       _delay_ms(1);
       
@@ -2515,9 +2528,10 @@ void loop()
                   {
                      if (i==YAW)
                      {
-                     Serial.print("\tslave ");
-                     Serial.print(i);
-                     Serial.print("\t");
+                     Serial.print("\tslave raw ");
+                     Serial.print(Slavechannelarrayraw[i]);
+                     Serial.print("\tslave\t");
+                    // Serial.print("\t");
                      Serial.print(Slavechannelarray[i]);
                      Serial.print("\tPOT\t");
                      uint16_t p = Border_Mapvar255(i, potwertarray[i], potgrenzearray[i][1], servomittearray[i], potgrenzearray[i][0], false);
@@ -2899,8 +2913,12 @@ void loop()
       //if(Slavechannelarray[YAW] )
 
       
-      yaw_slave = lerp(Slavechannelarray[YAW],yaw_slave,0.5);
+      yaw_slave = 255 - lerp(Slavechannelarray[YAW],yaw_slave,0.5);
       yaw_master = Border_Mapvar255(YAW, potwertarray[YAW], potgrenzearray[YAW][1], servomittearray[YAW], potgrenzearray[YAW][0], false);
+
+      pitch_slave = lerp(Slavechannelarray[PITCH],yaw_slave,0.5);
+      pitch_master = Border_Mapvar255(PITCH, potwertarray[PITCH], potgrenzearray[PITCH][1], servomittearray[PITCH], potgrenzearray[PITCH][0], false);
+
       /*
       if(masterslavestatus & (1 << MASTER)) //
       {
@@ -2910,6 +2928,7 @@ void loop()
       else 
       */
       {
+         // Slave Yaw
          if(abs(yaw_master - 127 ) < 8)
          {
             if(slavedelaycounter)
@@ -2918,7 +2937,6 @@ void loop()
             }
             else 
             {
-               //data.yaw = lerp(yaw_master,yaw_slave,0.5);
                data.yaw = yaw_slave;
             }
          }
@@ -2927,6 +2945,25 @@ void loop()
             slavedelaycounter = 100;
             data.yaw = yaw_master;
          }
+
+         // Slave Pitch
+         if(abs(pitch_master - 127 ) < 8)
+         {
+            if(slavedelaycounter)
+            {
+               slavedelaycounter--;
+            }
+            else 
+            {
+               data.pitch = pitch_slave;
+            }
+         }
+         else
+         {
+            slavedelaycounter = 100;
+            data.pitch = pitch_master;
+         }
+
       }
       
       //data.yaw = Border_Mapvar255(YAW, potwertarray[YAW], potgrenzearray[YAW][1], servomittearray[YAW], potgrenzearray[YAW][0], false);
@@ -2968,7 +3005,7 @@ void loop()
       //Serial.print(sinfloat);
       //Serial.print("\t");
       
-      data.pitch = Border_Mapvar255(PITCH, potwertarray[PITCH], potgrenzearray[PITCH][1], servomittearray[PITCH], potgrenzearray[PITCH][0], false);
+      //data.pitch = Border_Mapvar255(PITCH, potwertarray[PITCH], potgrenzearray[PITCH][1], servomittearray[PITCH], potgrenzearray[PITCH][0], false);
       // data.pitch = int(sinfloat);
       
       if (RAMPETEST)
