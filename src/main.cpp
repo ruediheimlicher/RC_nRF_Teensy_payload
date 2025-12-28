@@ -16,8 +16,11 @@
 
 #include <elapsedMillis.h>
 #include "defines.h"
+//#include "text.h"
 
 #include "MS5611.h"
+
+extern const char *FunktionTable[];
 
 const uint64_t pipeOut = 0xABCDABCD71LL; // NOTE: The address in the Transmitter and Receiver code must be the same "0xABCDABCD71LL" | Verici ve Alıcı kodundaki adres aynı olmalıdır
 
@@ -71,7 +74,14 @@ elapsedMillis sincelastpaket = 0;
 IntervalTimer servoimpulsTimer;
 IntervalTimer kanalimpulsTimer;
 
-uint8_t slavedelaycounter = 0;
+uint8_t yaw_slavedelaycounter = 0;
+uint8_t pitch_slavedelaycounter = 0;
+
+uint8_t roll_slavedelaycounter = 0;
+
+uint8_t throttle_slavedelaycounter = 0;
+
+
 uint8_t slavelerpcounter = 0;
 volatile uint8_t servoindex = 0;
 volatile uint16_t slaveimpulstimearray[NUM_SERVOS] = {};
@@ -2523,12 +2533,13 @@ void loop()
             {
                // if(masterslavestatus & (1<<SLAVE))
                {
-                  Serial.print("ANZEIGE_SLAVE Slavechannelarray: \t");
+                  //Serial.print("ANZEIGE_SLAVE Slavechannelarray: \t");
                   for (uint8_t i = 0; i < NUM_SERVOS; i++)
                   {
-                     if (i==YAW)
+                     if (i==YAW || i == PITCH)
                      {
-                     Serial.print("\tslave raw ");
+                     //Serial.print(\tFunktionTable[i]);
+                     Serial.print("\t*** slave r ");
                      Serial.print(Slavechannelarrayraw[i]);
                      Serial.print("\tslave\t");
                     // Serial.print("\t");
@@ -2537,14 +2548,29 @@ void loop()
                      uint16_t p = Border_Mapvar255(i, potwertarray[i], potgrenzearray[i][1], servomittearray[i], potgrenzearray[i][0], false);
                      Serial.print(p);
                      Serial.print("\tout\t");
-                     Serial.print(data.yaw);
+                     if(i==YAW)
+                     {
+                        Serial.print("YAW ");
+                        Serial.print(data.yaw);
+                        Serial.print("\t");
+                  
+                        Serial.print("\tyaw_slavedc\t");
+                        Serial.print(yaw_slavedelaycounter);
+                     }
+                     if(i==PITCH)
+                     {
+                        Serial.print("PITCH ");
+                        Serial.print(data.pitch);
+                        Serial.print("\t");
+                  
+                        Serial.print("\tpitch_slavedc\t");
+                        Serial.print(pitch_slavedelaycounter);
+                     }
+                     
                      }
                      
                   }
-                  Serial.print("\t");
                   
-                  Serial.print("\tslavedelaycounter\t");
-                  Serial.print(slavedelaycounter);
                   Serial.print("\n");
                }
             }
@@ -2913,17 +2939,24 @@ void loop()
       //if(Slavechannelarray[YAW] )
 
       
-      yaw_slave = 255 - lerp(Slavechannelarray[YAW],yaw_slave,0.5);
+      yaw_slave = lerp(Slavechannelarray[YAW],yaw_slave,0.5);
       yaw_master = Border_Mapvar255(YAW, potwertarray[YAW], potgrenzearray[YAW][1], servomittearray[YAW], potgrenzearray[YAW][0], false);
 
-      pitch_slave = lerp(Slavechannelarray[PITCH],yaw_slave,0.5);
+      pitch_slave = lerp(Slavechannelarray[PITCH],pitch_slave,0.5);
       pitch_master = Border_Mapvar255(PITCH, potwertarray[PITCH], potgrenzearray[PITCH][1], servomittearray[PITCH], potgrenzearray[PITCH][0], false);
+
+      roll_slave = lerp(Slavechannelarray[ROLL],roll_slave,0.5);
+      roll_master = Border_Mapvar255(ROLL, potwertarray[ROLL], potgrenzearray[ROLL][1], servomittearray[ROLL], potgrenzearray[ROLL][0], false);
+
+      throttle_slave = lerp(Slavechannelarray[THROTTLE],throttle_slave,0.5);
+      throttle_master = Border_Mapvar255(THROTTLE, potwertarray[THROTTLE], potgrenzearray[THROTTLE][1], servomittearray[THROTTLE], potgrenzearray[THROTTLE][0], false);
+
 
       /*
       if(masterslavestatus & (1 << MASTER)) //
       {
          data.yaw = yaw_master;
-         slavedelaycounter = 100;
+         yaw_slavedelaycounter = SLAVEDELAY;
       }
       else 
       */
@@ -2931,9 +2964,9 @@ void loop()
          // Slave Yaw
          if(abs(yaw_master - 127 ) < 8)
          {
-            if(slavedelaycounter)
+            if(yaw_slavedelaycounter)
             {
-               slavedelaycounter--;
+               yaw_slavedelaycounter--;
             }
             else 
             {
@@ -2942,16 +2975,17 @@ void loop()
          }
          else
          {
-            slavedelaycounter = 100;
+            yaw_slavedelaycounter = SLAVEDELAY;
             data.yaw = yaw_master;
          }
-
+         
+         
          // Slave Pitch
          if(abs(pitch_master - 127 ) < 8)
          {
-            if(slavedelaycounter)
+            if(pitch_slavedelaycounter)
             {
-               slavedelaycounter--;
+               pitch_slavedelaycounter--;
             }
             else 
             {
@@ -2960,9 +2994,50 @@ void loop()
          }
          else
          {
-            slavedelaycounter = 100;
+            pitch_slavedelaycounter = SLAVEDELAY;
             data.pitch = pitch_master;
          }
+         
+         /*
+        // Slave Roll
+         if(abs(roll_master - 127 ) < 8)
+         {
+            if(yaw_slavedelaycounter)
+            {
+               yaw_slavedelaycounter--;
+            }
+            else 
+            {
+               data.roll = roll_slave;
+            }
+         }
+         else
+         {
+            yaw_slavedelaycounter = SLAVEDELAY;
+            data.roll = roll_master;
+         }
+         */
+         /*
+         // Slave Throttle
+         if(abs(throttle_master - 127 ) < 8)
+         {
+            if(yaw_slavedelaycounter)
+            {
+               yaw_slavedelaycounter--;
+            }
+            else 
+            {
+               data.throttle= throttle_slave;
+            }
+         }
+         else
+         {
+            yaw_slavedelaycounter = SLAVEDELAY;
+            data.throttle = throttle_master;
+         }
+         */
+
+
 
       }
       
@@ -3006,6 +3081,7 @@ void loop()
       //Serial.print("\t");
       
       //data.pitch = Border_Mapvar255(PITCH, potwertarray[PITCH], potgrenzearray[PITCH][1], servomittearray[PITCH], potgrenzearray[PITCH][0], false);
+      
       // data.pitch = int(sinfloat);
       
       if (RAMPETEST)
@@ -3027,7 +3103,7 @@ void loop()
       }
        else
        {
-         data.roll = Border_Mapvar255(ROLL, potwertarray[ROLL], potgrenzearray[ROLL][1], servomittearray[ROLL], potgrenzearray[ROLL][0], false);
+         //data.roll = Border_Mapvar255(ROLL, potwertarray[ROLL], potgrenzearray[ROLL][1], servomittearray[ROLL], potgrenzearray[ROLL][0], false);
        }
       // uint16_t throttlemitte = servomittearray[THROTTLE];
       // data.throttle = Throttle_Map(potwertarray[THROTTLE],throttlemitte, POTHI,0,255, false );
