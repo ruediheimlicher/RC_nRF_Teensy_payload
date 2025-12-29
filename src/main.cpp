@@ -95,8 +95,11 @@ int16_t pitch_master = 127;
 int16_t roll_slave = 127;
 int16_t roll_master = 127;
 
-int16_t throttle_slave = 127;
-int16_t throttle_master = 127;
+uint16_t roll_fix = 0;
+
+int16_t throttle_slave = 0;
+int16_t throttle_master = 0;
+int16_t throttle_last = 0;
 
 // Decoder
 uint16_t Slavechannelarray[NUM_SERVOS] = {};
@@ -472,11 +475,27 @@ void slaveISR()
          Slavemittearray[slaveindex] = dur;
       }
       OSZIA_HI();
-      Slavechannelarrayraw[slaveindex] = dur; 
+      //Slavechannelarrayraw[slaveindex] = dur; 
       // red mit mitte von slave
-      uint8_t red = Border_Mapvar255_slave(dur, 1100, Slavemittearray[slaveindex], 2000, false);
+      uint8_t red = 0;
+      if(slaveindex == THROTTLE)
+      {
+         red = Border_Mapvar255_slave(dur, 1100, Slavemittearray[slaveindex], 2000, true);
+         if(red <5)
+         {
+            red = 0;
+         }
+
+      }
+      else
+      {
+         red = Border_Mapvar255_slave(dur, 1100, Slavemittearray[slaveindex], 2000, false);
+
+      }
+
       
       Slavechannelarray[slaveindex] = red; // Kanalwert speichern
+      
       slaveindex++;
    }
 }
@@ -2534,6 +2553,7 @@ void loop()
                // if(masterslavestatus & (1<<SLAVE))
                {
                   //Serial.print("ANZEIGE_SLAVE Slavechannelarray: \t");
+                  /*
                   for (uint8_t i = 0; i < NUM_SERVOS; i++)
                   {
                      if (i==YAW || i == PITCH)
@@ -2571,8 +2591,21 @@ void loop()
 
                      
                   }
-
-                  Serial.print(" THROTTLE ");
+                  */
+                  Serial.print(" THROTTLE master\t ");
+                  Serial.print(throttle_master);
+                  
+                  Serial.print("\t");
+                  Serial.print("last \t");
+                  Serial.print(throttle_last);
+                  Serial.print("\t");
+                  Serial.print("slave \t");
+                  Serial.print(throttle_slave);
+                  Serial.print("\t");
+                  Serial.print("Slavechannelarray \t");
+                  Serial.print(Slavechannelarray[THROTTLE]);
+                  Serial.print("\t");
+                  Serial.print("out \t");
                   Serial.print(data.throttle);
                   Serial.print("\t");
                   Serial.print("\tthrottle_slavedc\t");
@@ -2955,7 +2988,7 @@ void loop()
       roll_master = Border_Mapvar255(ROLL, potwertarray[ROLL], potgrenzearray[ROLL][1], servomittearray[ROLL], potgrenzearray[ROLL][0], false);
 
       throttle_slave = lerp(Slavechannelarray[THROTTLE],throttle_slave,0.5);
-      throttle_master = Border_Mapvar255(THROTTLE, potwertarray[THROTTLE], potgrenzearray[THROTTLE][1], servomittearray[THROTTLE], potgrenzearray[THROTTLE][0], false);
+      throttle_master = Border_Mapvar255_Throttle(THROTTLE, potwertarray[THROTTLE], potgrenzearray[THROTTLE][1], potgrenzearray[THROTTLE][0], false);
 
 
       /*
@@ -3025,21 +3058,30 @@ void loop()
          
          
          // Slave Throttle
-         if(abs(throttle_master  ) > 100)
+         if((throttle_master  < 8) )
          {
             if(throttle_slavedelaycounter)
             {
-               yaw_slavedelaycounter--;
+               throttle_slavedelaycounter--;
             }
             else 
             {
-               data.throttle= throttle_slave;
+               
+               {
+                  data.throttle= throttle_slave;
+               
+               }
+               
             }
          }
+        
          else
          {
+
             throttle_slavedelaycounter = SLAVEDELAY;
-            data.throttle = throttle_master;
+
+            data.throttle = throttle_master;//lerp(throttle_slave, throttle_master,0.2);
+            throttle_last = throttle_master;
          }
          
 
@@ -3116,7 +3158,7 @@ void loop()
       // data.throttle = Throttle_Map255(potwertarray[THROTTLE],servomittearray[THROTTLE], potgrenzearray[throttle][0],10,240, false ); // nur eine haelfte
       
 
-      data.throttle = Border_Mapvar255_Throttle(THROTTLE, potwertarray[THROTTLE], potgrenzearray[THROTTLE][1], potgrenzearray[THROTTLE][0], false);
+      //data.throttle = Border_Mapvar255_Throttle(THROTTLE, potwertarray[THROTTLE], potgrenzearray[THROTTLE][1], potgrenzearray[THROTTLE][0], false);
       
       data.aux1 = 0;//digitalRead(5); // CH5
       data.aux2 = 0;//digitalRead(7); // CH6
