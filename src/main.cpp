@@ -2568,9 +2568,15 @@ void loop()
                      }
                      
                      }
+
                      
                   }
-                  
+
+                  Serial.print(" THROTTLE ");
+                  Serial.print(data.throttle);
+                  Serial.print("\t");
+                  Serial.print("\tthrottle_slavedc\t");
+                  Serial.print(throttle_slavedelaycounter);
                   Serial.print("\n");
                }
             }
@@ -2998,11 +3004,11 @@ void loop()
             data.pitch = pitch_master;
          }
          
-         /*
+         
         // Slave Roll
          if(abs(roll_master - 127 ) < 8)
          {
-            if(yaw_slavedelaycounter)
+            if(roll_slavedelaycounter)
             {
                yaw_slavedelaycounter--;
             }
@@ -3013,15 +3019,15 @@ void loop()
          }
          else
          {
-            yaw_slavedelaycounter = SLAVEDELAY;
+            roll_slavedelaycounter = SLAVEDELAY;
             data.roll = roll_master;
          }
-         */
-         /*
+         
+         
          // Slave Throttle
-         if(abs(throttle_master - 127 ) < 8)
+         if(abs(throttle_master  ) > 100)
          {
-            if(yaw_slavedelaycounter)
+            if(throttle_slavedelaycounter)
             {
                yaw_slavedelaycounter--;
             }
@@ -3032,10 +3038,10 @@ void loop()
          }
          else
          {
-            yaw_slavedelaycounter = SLAVEDELAY;
+            throttle_slavedelaycounter = SLAVEDELAY;
             data.throttle = throttle_master;
          }
-         */
+         
 
 
 
