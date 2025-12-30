@@ -25,6 +25,7 @@ extern const char *FunktionTable[];
 const uint64_t pipeOut = 0xABCDABCD71LL; // NOTE: The address in the Transmitter and Receiver code must be the same "0xABCDABCD71LL" | Verici ve Alıcı kodundaki adres aynı olmalıdır
 
 int Border_Mapvar255_slave(int val, int lower, int middle, int upper, bool reverse);
+int Border_Mapvar255_slave_Throttle(uint8_t servo,int val, int lower, int upper, bool reverse);
 
 // extern "C"
 
@@ -95,8 +96,11 @@ int16_t pitch_master = 127;
 int16_t roll_slave = 127;
 int16_t roll_master = 127;
 
-int16_t throttle_slave = 127;
-int16_t throttle_master = 127;
+int16_t throttle_slave = 0;
+int16_t throttle_master = 0;
+int16_t throttle_last = 0;
+int16_t throttle_raw = 0;
+
 
 // Decoder
 uint16_t Slavechannelarray[NUM_SERVOS] = {};
@@ -355,6 +359,7 @@ elapsedMillis buzzintervall = 0;
 
 int Border_Mapvar255(uint8_t servo, int val, int lower, int middle, int upper, bool reverse);
 
+int Border_Mapvar255_slave_Throttle(uint8_t servo,int val, int lower, int upper, bool reverse);
 
 
 
@@ -416,24 +421,7 @@ volatile uint32_t t_last = 0;
 volatile uint16_t ch[4];
 volatile uint8_t ch_idx = 0;
 
-/*
-void isr_ppm() {
-   uint32_t t = ARM_DWT_CYCCNT;       // 600 MHz → 1 Cycle ≈ 1.67 ns
-   uint32_t dt = t - t_last;
-   t_last = t;
-   
-   // 3000–5000 µs Sync → in cycles: 3000e-6 * 600e6 = 1.8e6
-   if (dt > 4800000) {
-      ch_idx = 0;
-      OSZIA_LO(); // Sync → Frame neu
-      return;
-   }
-   OSZIA_HI(); // Sync → Frame neu
-   // Pulsbreite in µs zurückrechnen
-   Slavechannelarray[ch_idx] = dt / 600;             // 600 cycles = 1 µs
-   if (ch_idx < 4) ch_idx++;
-}
-*/
+
 
 volatile unsigned long lastTime = 0;
 volatile unsigned long pulseLength = 0;
@@ -441,7 +429,7 @@ volatile byte channel = 0;
 const byte maxChannels = 8;
 // volatile unsigned int ppmValues[maxChannels];
 
-
+int Border_Mapvar255_Throttle(uint8_t servo, int val, int lower, int upper, bool reverse);
 
 void slaveplugISR()
 {
@@ -472,9 +460,21 @@ void slaveISR()
          Slavemittearray[slaveindex] = dur;
       }
       OSZIA_HI();
-      Slavechannelarrayraw[slaveindex] = dur; 
+      //Slavechannelarrayraw[slaveindex] = dur; 
       // red mit mitte von slave
-      uint8_t red = Border_Mapvar255_slave(dur, 1100, Slavemittearray[slaveindex], 2000, false);
+      int red = 0;
+      if(slaveindex == THROTTLE)
+      {       
+         red = Border_Mapvar255_slave_Throttle(THROTTLE,dur, 1100, 2000, false);
+         if(red <5)
+         {
+            red = 0;
+         }
+      }
+      else
+      {
+         red = Border_Mapvar255_slave(dur, 1100, Slavemittearray[slaveindex], 2000, false);
+      }
       
       Slavechannelarray[slaveindex] = red; // Kanalwert speichern
       slaveindex++;
@@ -1316,6 +1316,18 @@ int Border_Mapvar255_slave(int val, int lower, int middle, int upper, bool rever
    
    return (reverse ? 255 - levelint : levelint);
 }
+
+int Border_Mapvar255_slave_Throttle(uint8_t servo,int val, int lower, int upper, bool reverse)
+{
+
+   val = constrain(val, lower, upper);   // Grenzen einhalten
+   val = map(val, lower, upper, 0, 255); // normieren auf 0 - 255
+   throttle_raw = val;
+  
+   return (reverse ? 255 - val : val);
+
+}
+
 
 int Border_Mapvar255(uint8_t servo, int val, int lower, int middle, int upper, bool reverse)
 {
@@ -2534,6 +2546,7 @@ void loop()
                // if(masterslavestatus & (1<<SLAVE))
                {
                   //Serial.print("ANZEIGE_SLAVE Slavechannelarray: \t");
+                  /*
                   for (uint8_t i = 0; i < NUM_SERVOS; i++)
                   {
                      if (i==YAW || i == PITCH)
@@ -2571,13 +2584,30 @@ void loop()
 
                      
                   }
+                  */
+                  +Serial.print(" THROTTLE master ");
++                  Serial.print(throttle_master);
+                   
+-                  Serial.print(" THROTTLE ");
++                  //Serial.print("\t");
++                  Serial.print("last \t");
++                  Serial.print(throttle_last);
++                  Serial.print(" ");
++                  Serial.print("slave \t");
++                  Serial.print(throttle_slave);
++                  Serial.print("\t");
++                  Serial.print("Slavechannelarray \t");
++                  Serial.print(Slavechannelarray[THROTTLE]);
++                  Serial.print("\t");
++                  Serial.print("out \t");
+                   Serial.print(data.throttle);
+                   Serial.print("\t");
+                   Serial.print("\tthrottle_slavedc\t");
+                   Serial.print(throttle_slavedelaycounter);
+                   Serial.print("\tthrottle_raw\t");
+                   Serial.print(throttle_raw);
+                   Serial.print("\n");
 
-                  Serial.print(" THROTTLE ");
-                  Serial.print(data.throttle);
-                  Serial.print("\t");
-                  Serial.print("\tthrottle_slavedc\t");
-                  Serial.print(throttle_slavedelaycounter);
-                  Serial.print("\n");
                }
             }
                break;
@@ -2955,8 +2985,7 @@ void loop()
       roll_master = Border_Mapvar255(ROLL, potwertarray[ROLL], potgrenzearray[ROLL][1], servomittearray[ROLL], potgrenzearray[ROLL][0], false);
 
       throttle_slave = lerp(Slavechannelarray[THROTTLE],throttle_slave,0.5);
-      throttle_master = Border_Mapvar255(THROTTLE, potwertarray[THROTTLE], potgrenzearray[THROTTLE][1], servomittearray[THROTTLE], potgrenzearray[THROTTLE][0], false);
-
+      throttle_master = Border_Mapvar255_Throttle(THROTTLE, potwertarray[THROTTLE], potgrenzearray[THROTTLE][1], potgrenzearray[THROTTLE][0], false);
 
       /*
       if(masterslavestatus & (1 << MASTER)) //
@@ -3025,21 +3054,22 @@ void loop()
          
          
          // Slave Throttle
-         if(abs(throttle_master  ) > 100)
+         if((abs(throttle_master - throttle_last) < 4) && (throttle_slave > 0))
          {
             if(throttle_slavedelaycounter)
             {
-               yaw_slavedelaycounter--;
+               throttle_slavedelaycounter--;
             }
             else 
             {
-               data.throttle= throttle_slave;
+               data.throttle= lerp(throttle_slave,data.throttle,0.02);
             }
          }
          else
          {
-            throttle_slavedelaycounter = SLAVEDELAY;
+            throttle_slavedelaycounter = 4*SLAVEDELAY;
             data.throttle = throttle_master;
+            throttle_last = throttle_master;
          }
          
 
@@ -3116,7 +3146,7 @@ void loop()
       // data.throttle = Throttle_Map255(potwertarray[THROTTLE],servomittearray[THROTTLE], potgrenzearray[throttle][0],10,240, false ); // nur eine haelfte
       
 
-      data.throttle = Border_Mapvar255_Throttle(THROTTLE, potwertarray[THROTTLE], potgrenzearray[THROTTLE][1], potgrenzearray[THROTTLE][0], false);
+      //data.throttle = Border_Mapvar255_Throttle(THROTTLE, potwertarray[THROTTLE], potgrenzearray[THROTTLE][1], potgrenzearray[THROTTLE][0], false);
       
       data.aux1 = 0;//digitalRead(5); // CH5
       data.aux2 = 0;//digitalRead(7); // CH6

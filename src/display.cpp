@@ -67,7 +67,7 @@ extern uint8_t                      calibstatus;
 #define cursortab5 78
 #define cursortab6 90
 #define cursortab7 100
-uint8_t cursortab[10] = {cursortab0,cursortab1,cursortab2,cursortab3,cursortab4,cursortab5,cursortab6,cursortab7,cursortab0,cursortab0};
+//uint8_t cursortab[10] = {cursortab0,cursortab1,cursortab2,cursortab3,cursortab4,cursortab5,cursortab6,cursortab7,cursortab0,cursortab0};
 //extern  uint16_t  cursorpos[8][8]; // Aktueller screen: werte fuer page und daraufliegende col fuer cursor (hex). geladen aus progmem
 
 extern uint16_t   stopsekunde;
@@ -243,13 +243,13 @@ void oled_flyerbatteriebalken_setwert(uint8_t x,uint8_t y, uint8_t b, uint8_t h,
 void oled_setBatterieWert(uint8_t x,uint8_t y, uint8_t b, uint8_t h,float wert)
 {
    u8g2.setFontDirection(3);
-         u8g2.setFont(u8g2_font_t0_11_mr);  
+   u8g2.setFont(u8g2_font_t0_11_mr);  
 
-      u8g2.setCursor(x,y);
-      //u8g2.setDrawColor(0);
-      u8g2.print(wert,1);
-      u8g2.setDrawColor(1);
-      u8g2.setFontDirection(0);
+   u8g2.setCursor(x,y);
+   //u8g2.setDrawColor(0);
+   u8g2.print(wert,1);
+   u8g2.setDrawColor(1);
+   u8g2.setFontDirection(0);
 }
 
 void oled_horizontalbalken(uint8_t x,uint8_t y, uint8_t b, uint8_t h)
