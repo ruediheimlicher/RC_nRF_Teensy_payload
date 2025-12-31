@@ -449,8 +449,6 @@ void updateHomeScreen()
       
       oled_setBatterieWert(FLYBATTX+8,FLYBATTY+FLYBATTH+18,FLYBATTB+18,14,UFlyerBatt);
       
-   
-
 
       u8g2.setFont(u8g2_font_t0_15_mr);  
       //

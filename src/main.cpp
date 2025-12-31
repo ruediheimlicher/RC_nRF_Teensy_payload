@@ -83,7 +83,6 @@ uint8_t roll_slavedelaycounter = 0;
 uint8_t throttle_slavedelaycounter = 0;
 
 
-uint8_t slavelerpcounter = 0;
 volatile uint8_t servoindex = 0;
 volatile uint16_t slaveimpulstimearray[NUM_SERVOS] = {};
 
@@ -99,11 +98,11 @@ int16_t roll_master = 127;
 int16_t throttle_slave = 0;
 int16_t throttle_master = 0;
 int16_t throttle_last = 0;
-int16_t throttle_raw = 0;
+volatile int16_t throttle_raw = 0;
 
 
 // Decoder
-uint16_t Slavechannelarray[NUM_SERVOS] = {};
+volatile uint16_t Slavechannelarray[NUM_SERVOS] = {};
 
 uint16_t Slavechannelarrayraw[NUM_SERVOS] = {};
 
@@ -177,6 +176,10 @@ uint8_t calibstatus = 0;
 uint8_t savestatus = 0;
 
 uint8_t anzeigestatus = 0;
+
+uint8_t slavestatus = 0;
+
+#define SLAVE_ON                    1
 
 float potlo = POTLO; // min pot
 float pothi = POTHI; // max pot
@@ -1100,9 +1103,12 @@ void setup()
    
    for (int i = 0; i < NUM_SERVOS; i++)
    {
+      
       Slavechannelarray[i] = 127; // Mitte
+
    }
-   
+   Slavechannelarray[THROTTLE] = 0;
+
    pinMode(BUZZPIN, OUTPUT);
    digitalWrite(BUZZPIN, LOW);
    
@@ -1134,6 +1140,23 @@ void setup()
    
    pinMode(TASTATUR_PIN, INPUT);
    
+   // Master/slave checken
+   if (digitalRead(PPM_DIR_PIN) == 0) // Switch geschlossen, umschalten auf Slave
+      {
+        
+            Serial.println("\tsetup > MASTER");
+            masterslavestatus &= ~(1 << SLAVE);
+            masterslavestatus |= (1 << MASTER);
+         
+      }
+      else // Schalter offen, umschalten auf Master
+      {
+        
+            Serial.println("\tsetup > SLAVE");
+            masterslavestatus &= ~(1 << MASTER);
+            masterslavestatus |= (1 << SLAVE);
+
+      }
    
    // OLED
    
@@ -1319,10 +1342,10 @@ int Border_Mapvar255_slave(int val, int lower, int middle, int upper, bool rever
 
 int Border_Mapvar255_slave_Throttle(uint8_t servo,int val, int lower, int upper, bool reverse)
 {
-
+   //throttle_raw = val;
    val = constrain(val, lower, upper);   // Grenzen einhalten
    val = map(val, lower, upper, 0, 255); // normieren auf 0 - 255
-   throttle_raw = val;
+   //throttle_raw = val;
   
    return (reverse ? 255 - val : val);
 
@@ -1438,15 +1461,6 @@ void loop()
       
       if (digitalRead(PPM_DIR_PIN) == 0) // Switch geschlossen, umschalten auf Slave
       {
-         if (masterslavestatus & (1 << MASTER)) // war bisher master
-         {
-            Serial.println("\t> SLAVE");
-            masterslavestatus &= ~(1 << MASTER);
-            masterslavestatus |= (1 << SLAVE);
-         }
-      }
-      else // Schalter offen, umschalten auf Master
-      {
          if (masterslavestatus & (1 << SLAVE)) // war bisher slave
          {
             Serial.println("\t> MASTER");
@@ -1454,8 +1468,16 @@ void loop()
             masterslavestatus |= (1 << MASTER);
          }
       }
-      
-      
+      else // Schalter offen, umschalten auf Master
+      {
+         if (masterslavestatus & (1 << MASTER)) // war bisher master
+         {
+            Serial.println("\t> SLAVE");
+            masterslavestatus &= ~(1 << MASTER);
+            masterslavestatus |= (1 << SLAVE);
+         }
+      }
+
       //
       zeitintervall = 0;
       digitalWrite(LOOPLED, !digitalRead(LOOPLED));
@@ -2605,7 +2627,7 @@ void loop()
                    Serial.print("\tthrottle_slavedc\t");
                    Serial.print(throttle_slavedelaycounter);
                    Serial.print("\tthrottle_raw\t");
-                   Serial.print(throttle_raw);
+                   Serial.print(throttle_raw+1);
                    Serial.print("\n");
 
                }
@@ -3070,6 +3092,8 @@ void loop()
             throttle_slavedelaycounter = 4*SLAVEDELAY;
             data.throttle = throttle_master;
             throttle_last = throttle_master;
+
+
          }
          
 
