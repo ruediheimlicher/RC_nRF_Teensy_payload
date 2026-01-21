@@ -100,7 +100,7 @@
 
 #define BATT_PIN A6
 
-#define SLAVEDELAY      20
+#define SLAVEDELAY      0
 
 
 

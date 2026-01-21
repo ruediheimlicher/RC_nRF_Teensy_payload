@@ -250,6 +250,7 @@ void oled_setBatterieWert(uint8_t x,uint8_t y, uint8_t b, uint8_t h,float wert)
    u8g2.print(wert,1);
    u8g2.setDrawColor(1);
    u8g2.setFontDirection(0);
+
 }
 
 void oled_horizontalbalken(uint8_t x,uint8_t y, uint8_t b, uint8_t h)
@@ -442,7 +443,7 @@ void updateHomeScreen()
       
       //oled_flyerbatteriebalken_setwert(BATTX,BATTY,BATTB,BATTH+1,batterieanzeige);
 
-      u8g2.setFont(u8g2_font_t0_14_mr);  
+      //u8g2.setFont(u8g2_font_t0_14_mr);  
          
 
       oled_flyerbatteriebalken_setwert(FLYBATTX,FLYBATTY,FLYBATTB,FLYBATTH,flyerbatterieanzeige);

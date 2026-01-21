@@ -16,6 +16,10 @@
 		{
 			"name": "RC_nRF_FS_Teensy",
 			"path": "../../RC_nRF_FS_Teensy"
+		},
+		{
+			"name": "H0_Decoder_A84_Bridge_PIO",
+			"path": "../../../ AVR/ AVR_Programme/H0_Decoder_A84_Bridge_PIO"
 		}
 	],
 	"settings": {

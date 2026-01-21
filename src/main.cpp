@@ -1577,8 +1577,7 @@ void loop()
                {
                   case 0: // HOMESCREEN
                   {
-                  }
-                     break;
+                  }break;
                   case 1: // T2 MENUSCREEN
                   {
                      if (curr_model)
@@ -1587,7 +1586,7 @@ void loop()
                         updateMenuScreen();
                         u8g2.sendBuffer();
                      }
-                  }
+                  }break;
                   case 2: // T2 MODELLSCREEN
                   {
                      if (curr_funktion)
@@ -1596,8 +1595,7 @@ void loop()
                         updateModellScreen();
                         u8g2.sendBuffer();
                      }
-                  }
-                     break;
+                  }break;
                   case 3: // FUNKTIONSCREEN
                   {
                      switch (curr_cursorspalte)
@@ -1632,8 +1630,7 @@ void loop()
                            {
                               curr_wert--;
                            }
-                        }
-                           break;
+                        }break;
                         case 1: // T2 UP DOWN
                         {
                            uint8_t level = kanalsettingarray[curr_model][curr_funktion][1];
@@ -1696,7 +1693,7 @@ void loop()
                                        {
                                           expoO++;
                                           savestatus = CHANGED;
-                                          ;
+                                          
                                        }
                                     }
                                        break;
@@ -1706,19 +1703,16 @@ void loop()
                                        {
                                           expoU++;
                                           savestatus = CHANGED;
-                                          ;
+                                          
                                        }
-                                    }
-                                       break;
+                                    }break;
                                  }
                                  expo = (expoO << 4) | expoU;
                                  kanalsettingarray[curr_model][curr_funktion][2] = expo;
-                              }
-                                 break;
+                              }break;
                                  
                            } // switch curr_aktion
-                        }
-                           break;
+                        }break;
                            
                      } // switch curr_cursorspalte
                      updateAktionScreen();
@@ -1735,28 +1729,23 @@ void loop()
                         {
                            case MODELL:
                            {
-                           }
-                              break;
+                           }break;
                               
                            case SIM:
                            {
-                           }
-                              break;
+                           }break;
                               
                            case CALIB:
                            {
                               calibstatus &= ~(1 << CALIB_START);
-                           }
-                              break;
+                           }break;
                         } // switch curr_modus
                         curr_modus--;
                      }
-                  }
-                     break;
+                  }break;
                } // switch (curr_screen)
             }
-         }
-            break;
+         }break;
             
          case 3:
          {
@@ -1797,16 +1786,13 @@ void loop()
                            u8g2.sendBuffer();
                         }
                      }
-                  }
-                     break;
+                  }break;
                   case 1: // MENUSCREEN
                   {
-                  }
-                     break;
+                  }break;
                   case 2: // MODELLSCREEN
                   {
-                  }
-                     break;
+                  }break;
                   case 3: // FUNKTIONSCREEN
                   {
                      switch (curr_cursorspalte)
@@ -2568,7 +2554,7 @@ void loop()
                // if(masterslavestatus & (1<<SLAVE))
                {
                   //Serial.print("ANZEIGE_SLAVE Slavechannelarray: \t");
-                  /*
+                  
                   for (uint8_t i = 0; i < NUM_SERVOS; i++)
                   {
                      if (i==YAW || i == PITCH)
@@ -2606,7 +2592,8 @@ void loop()
 
                      
                   }
-                  */
+                  
+                 /*
                   +Serial.print(" THROTTLE master ");
 +                  Serial.print(throttle_master);
                    
@@ -2628,6 +2615,7 @@ void loop()
                    Serial.print(throttle_slavedelaycounter);
                    Serial.print("\tthrottle_raw\t");
                    Serial.print(throttle_raw+1);
+                   */
                    Serial.print("\n");
 
                }
@@ -3009,14 +2997,17 @@ void loop()
       throttle_slave = lerp(Slavechannelarray[THROTTLE],throttle_slave,0.5);
       throttle_master = Border_Mapvar255_Throttle(THROTTLE, potwertarray[THROTTLE], potgrenzearray[THROTTLE][1], potgrenzearray[THROTTLE][0], false);
 
-      /*
+      
       if(masterslavestatus & (1 << MASTER)) //
       {
          data.yaw = yaw_master;
-         yaw_slavedelaycounter = SLAVEDELAY;
+         data.pitch = pitch_master;
+         data.roll = roll_master;
+         data.throttle = throttle_master;
+         //yaw_slavedelaycounter = SLAVEDELAY;
       }
       else 
-      */
+      
       {
          // Slave Yaw
          if(abs(yaw_master - 127 ) < 8)
@@ -3089,7 +3080,7 @@ void loop()
          }
          else
          {
-            throttle_slavedelaycounter = 4*SLAVEDELAY;
+            throttle_slavedelaycounter = SLAVEDELAY;
             data.throttle = throttle_master;
             throttle_last = throttle_master;
 
