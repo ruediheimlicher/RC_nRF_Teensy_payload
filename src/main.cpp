@@ -2557,7 +2557,7 @@ void loop()
                   
                   for (uint8_t i = 0; i < NUM_SERVOS; i++)
                   {
-                     if (i==YAW || i == PITCH)
+                     if (i==YAW || i == PITCH || i == ROLL)
                      {
                      //Serial.print(\tFunktionTable[i]);
                      Serial.print("\t*** slave r ");
@@ -2569,6 +2569,12 @@ void loop()
                      uint16_t p = Border_Mapvar255(i, potwertarray[i], potgrenzearray[i][1], servomittearray[i], potgrenzearray[i][0], false);
                      Serial.print(p);
                      Serial.print("\tout\t");
+                     if(i==ROLL)
+                     {
+                        Serial.print("ROLL ");
+                        Serial.print(data.roll);
+                        Serial.print("\t");
+                     }
                      if(i==YAW)
                      {
                         Serial.print("YAW ");
@@ -2587,6 +2593,7 @@ void loop()
                         Serial.print("\tpitch_slavedc\t");
                         Serial.print(pitch_slavedelaycounter);
                      }
+
                      
                      }
 
@@ -3148,13 +3155,26 @@ void loop()
       // if(curr_model == 0)
       if (!(calibstatus & (1 << CALIB_START))) // bei calib soll roll ausgegeben werden
       {
-         potgrenzearray[ROLL][0] = servomittearray[ROLL];
-         potgrenzearray[ROLL][1] = servomittearray[ROLL];
-         data.roll =  127;
+         if(curr_model == 0)
+         {
+           // potgrenzearray[ROLL][0] = servomittearray[ROLL];
+          //  potgrenzearray[ROLL][1] = servomittearray[ROLL];
+         }
+         
+         if(curr_model > 0)
+         {
+            data.roll = Border_Mapvar255(ROLL, potwertarray[ROLL], potgrenzearray[ROLL][1], servomittearray[ROLL], potgrenzearray[ROLL][0], false);
+         }
+         else
+         {
+            data.roll =  127;
+         }
+         
       }
        else
        {
-         //data.roll = Border_Mapvar255(ROLL, potwertarray[ROLL], potgrenzearray[ROLL][1], servomittearray[ROLL], potgrenzearray[ROLL][0], false);
+         
+         
        }
       // uint16_t throttlemitte = servomittearray[THROTTLE];
       // data.throttle = Throttle_Map(potwertarray[THROTTLE],throttlemitte, POTHI,0,255, false );

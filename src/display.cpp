@@ -366,6 +366,7 @@ void updateHomeScreen()
       }
 
       char buf0[4];
+
       /*
       // Yaw
       //u8g2.setCursor(4,30);
@@ -435,7 +436,8 @@ void updateHomeScreen()
 
    }   
       uint8_t p = curr_model;
-
+      u8g2.setCursor(80,16);
+      u8g2.print(data.roll);
       //
       oled_batteriebalken_setwert(BATTX,BATTY+8,BATTB,BATTH+1,batterieanzeige);
 
