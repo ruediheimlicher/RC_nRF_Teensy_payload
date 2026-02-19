@@ -244,6 +244,8 @@ Bounce2::Button eepromtaste = Bounce2::Button();
 
 #define ANZ_REP 8
 uint16_t tastaturwert = 0;
+uint16_t lasttastaturwert = 0;
+
 uint16_t tastaturwertarray[ANZ_REP] = {};
 uint8_t mittelposition = 0;
 
@@ -397,12 +399,24 @@ uint16_t lerp(uint16_t a, uint16_t b,float t)
    return a * (1 - t) + b * t;
 }
 
-
-uint8_t debounceTaste()
+uint8_t rawKeyPressed(void)
 {
-   static uint8_t debounced_state = 0;
+   if(abs(tastaturwert - lasttastaturwert) < 10) // ON
+   {
+      return 0;
+   }
+   
+   else
+   {
+      return 1;
+   }
+}
+
+uint8_t debounceTaste(void)
+{
    static uint16_t state = 0;
-   state = (state << 1) | (tastaturwert > 10);
+   //state = ((state << 1) | rawKeyPressed() | 0xE000) ;
+   state= ((state<<1) | !rawKeyPressed() | 0xE000) & 0xFFFF; // Begrenzung der Bitschieberei
    if (state >= 0xF00)
    {
       // debouncecheck = 1;
@@ -410,7 +424,7 @@ uint8_t debounceTaste()
    }
    
    // debouncecheck = 0;
-   return 2;
+   return 0;
 }
 
 void setupDebounce()
@@ -953,7 +967,7 @@ void tastenfunktion(uint16_t Tastenwert)
    {
       // OSZIA_LO();
       
-      if (tastaturcounter >= 40) //   Prellen
+      if (tastaturcounter >= 20) //   Prellen
       {
          Serial.print("Tastenwert:\t");
          Serial.print(Tastenwert);
@@ -1078,6 +1092,7 @@ void setCalib(void)
 void setup()
 {
    anzeigestatus = ANZEIGE_SLAVE;
+   anzeigestatus = 0;
    
    masterslavestatus |= (1 << MASTER);
    uint8_t ee[16];
@@ -1443,14 +1458,20 @@ void loop()
    //
    loopcounter0++;
    
-   if (sincelasttastatur > 20)
+   if (sincelasttastatur > 40)
    {
       // OSZIA_LO();
       
       sincelasttastatur = 0;
       
       tastaturwert = analogRead(TASTATUR_PIN) / 2;
-      tastenfunktion(tastaturwert);
+      if(debounceTaste())
+      {
+         //Serial.print("Tastaturwert: ");
+         //Serial.print(tastaturwert);
+         tastenfunktion(tastaturwert);
+      }
+      
    }
    
    if (zeitintervall > 500)
