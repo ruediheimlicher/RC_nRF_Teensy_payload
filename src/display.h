@@ -17,9 +17,10 @@ extern uint8_t balkenhh;
 extern uint8_t balkenhb;
 
 extern unsigned char char_x;
-extern unsigned char char_y;
+extern int8_t char_y;
 
-extern uint8_t savestatus;
+extern uint8_t curr_diststatus;
+
 
 extern uint8_t ackData[4];
 
@@ -58,7 +59,7 @@ void refreshScreen(void);
 void setSaveScreen(void);
 
 void setModusScreen(void);
-void updateModusScreen(void);
+void updateModusScreen(uint8_t modus);
 
 
 #endif
