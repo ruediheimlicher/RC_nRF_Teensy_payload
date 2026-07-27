@@ -49,6 +49,13 @@
 #define PPMLO 850  // Minwert ms fuer Impulslaenge
 #define PPMHI 2150 // Maxwert ms fur Impulslaenge
 
+// Frequenzen für den Posthorn-Dreiklang in Hz
+const int NOTE_CIS = 554; // Cis''
+const int NOTE_E   = 659; // E''
+const int NOTE_A   = 880; // A''
+
+
+
 //
 #define MODELL 0
 #define SIM 1

@@ -364,7 +364,7 @@ void updateHomeScreen()
       {
          
          u8g2.setDrawColor(0);
-         u8g2.drawBox(4,46,120,18);
+         u8g2.drawBox(76,38,20,18);
          u8g2.setDrawColor(1);
          //u8g2.sendBuffer();
          savestatus = 1;
@@ -1027,7 +1027,7 @@ void refreshScreen(void)
          u8g2.print("T:");
          sprintf(buf, "%3d",throttlesekunden);
          u8g2.setDrawColor(0);
-         u8g2.drawBox(66,36,26,12);
+         u8g2.drawBox(66,36,28,12);
          u8g2.setDrawColor(1);
          u8g2.drawStr(66,48,buf);
          

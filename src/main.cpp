@@ -167,6 +167,7 @@ uint8_t sendestunde = 0;
 
 // Status
 uint8_t blinkstatus = 0;
+uint8_t beepstatus = 0;
 
 uint8_t curr_steuerstatus = 0;
 
@@ -1127,7 +1128,7 @@ void setup()
    Slavechannelarray[THROTTLE] = 0;
    
    pinMode(BUZZPIN, OUTPUT);
-   digitalWrite(BUZZPIN, LOW);
+   digitalWrite(BUZZPIN, HIGH);
    
    curr_steuerstatus = MODELL;
    // savestatus = 0xFF;
@@ -1149,7 +1150,7 @@ void setup()
    eepromread();
    _delay_ms(100);
    
-   pinMode(BUZZPIN, OUTPUT);
+   //pinMode(BUZZPIN, OUTPUT);
    
    pinMode(LOOPLED, OUTPUT);
    
@@ -1507,13 +1508,18 @@ void loop()
       sekundencounter++;
       if (sekundencounter % 2)
       {
-         
+         if(beepstatus)
+         {
+           tone(BUZZPIN, 1000,500);
+         }
+
          throttlecounter += (data.throttle);
          throttlesekunden = throttlecounter >> 8;
          blinkstatus = 1;
          if (throttlesekunden > 250)
          {
-            tone(BUZZPIN, 1000);
+            //tone(BUZZPIN, 1000);
+            beepstatus = 1;
          }
          
          stopsekunde++;
@@ -1530,8 +1536,8 @@ void loop()
       }
       else
       {
-         blinkstatus = 0;
-         noTone(BUZZPIN);
+         //beepstatus = 0;
+         //noTone(BUZZPIN);
       }
       if (curr_screen == MODUSSCREEN)
       {
@@ -2143,6 +2149,7 @@ void loop()
             
          case 7:
          {
+            beepstatus = 1;
             if (tastaturstatus & (1 << AKTION_OK))
             {
                // Serial.print("T 7 back ");
@@ -2154,6 +2161,7 @@ void loop()
                   {
                      case 0: // HOMESCREEN
                      {
+                        //beepstatus = 1;
                         // savestatus = CHANGED;
                         setHomeScreen();
                      }
@@ -2391,8 +2399,8 @@ void loop()
             
          case 9:
          {
-            Serial.print("T 9 SAVE ");
-            
+            //Serial.print("T 9 SAVE ");
+            beepstatus = 0;
             switch (curr_screen)
             {
                case 0:
@@ -3303,7 +3311,7 @@ void loop()
       else
       {
          // Serial.println("radio error\n");
-         digitalWrite(BUZZPIN, !(digitalRead(BUZZPIN)));
+         //digitalWrite(BUZZPIN, !(digitalRead(BUZZPIN)));
          errcounter++;
       }
       // OSZIA_HI();
