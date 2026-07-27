@@ -100,6 +100,11 @@
 #define arrow_width 16
 #define arrow_height 16
 
+// Frequenzen für den Posthorn-Dreiklang in Hz
+const int NOTE_CIS = 554; // Cis''
+const int NOTE_E   = 659; // E''
+const int NOTE_A   = 880; // A''
+
 static unsigned char pfeil_right[] =
     {
         0x00, 0x02, 0x06, 0x0e, 0x1e, 0x3e, 0x7e, 0xfe, 0xfe, 0x7e, 0x3e, 0x1e,

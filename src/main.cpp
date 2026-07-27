@@ -1091,6 +1091,24 @@ void setCalib(void)
 {
 }
 
+void playPosthorn() 
+{
+  // 1. Ton: Cis (ca. 500 ms)
+  tone(BUZZPIN, NOTE_CIS);
+  delay(500);
+  
+  // 2. Ton: E (ca. 500 ms)
+  tone(BUZZPIN, NOTE_E);
+  delay(500);
+  
+  // 3. Ton: A (ca. 1000 ms gehalten)
+  tone(BUZZPIN, NOTE_A);
+  delay(1000);
+  
+  // Ton ausschalten
+  noTone(BUZZPIN);
+}
+
 void setup()
 {
    anzeigestatus = ANZEIGE_SLAVE;
@@ -1127,7 +1145,7 @@ void setup()
    Slavechannelarray[THROTTLE] = 0;
    
    pinMode(BUZZPIN, OUTPUT);
-   digitalWrite(BUZZPIN, LOW);
+   digitalWrite(BUZZPIN, HIGH);
    
    curr_steuerstatus = MODELL;
    // savestatus = 0xFF;
@@ -1149,7 +1167,7 @@ void setup()
    eepromread();
    _delay_ms(100);
    
-   pinMode(BUZZPIN, OUTPUT);
+   //pinMode(BUZZPIN, OUTPUT);
    
    pinMode(LOOPLED, OUTPUT);
    
@@ -1507,10 +1525,13 @@ void loop()
       sekundencounter++;
       if (sekundencounter % 2)
       {
-         
+         if(blinkstatus)
+         {
+           // tone(BUZZPIN, 1000,500);
+         }
          throttlecounter += (data.throttle);
          throttlesekunden = throttlecounter >> 8;
-         blinkstatus = 1;
+         //blinkstatus = 1;
          if (throttlesekunden > 250)
          {
             tone(BUZZPIN, 1000);
@@ -1530,8 +1551,8 @@ void loop()
       }
       else
       {
-         blinkstatus = 0;
-         noTone(BUZZPIN);
+         //blinkstatus = 0;
+         //noTone(BUZZPIN);
       }
       if (curr_screen == MODUSSCREEN)
       {
@@ -2143,6 +2164,7 @@ void loop()
             
          case 7:
          {
+            blinkstatus = 1;
             if (tastaturstatus & (1 << AKTION_OK))
             {
                // Serial.print("T 7 back ");
@@ -2391,7 +2413,9 @@ void loop()
             
          case 9:
          {
-            Serial.print("T 9 SAVE ");
+            blinkstatus = 0;
+            //noTone(BUZZPIN);
+            //Serial.print("T 9 SAVE ");
             
             switch (curr_screen)
             {
@@ -2805,7 +2829,10 @@ void loop()
          flyerbatteriespannung = float(ackData[3]);
          // y = 0.0135x + 5.1213
          
-         
+         if((flyerbatteriespannung < 180) && (throttle_master > 100))
+         {
+            //blinkstatus = 1;
+         }
          
          //UFlyerBatt = fmap(flyerbatteriespannung, 60.0, 240.0, 0, 44.0);
          UFlyerBatt = 0.0135 * flyerbatteriespannung + 5.1213;
@@ -3303,7 +3330,7 @@ void loop()
       else
       {
          // Serial.println("radio error\n");
-         digitalWrite(BUZZPIN, !(digitalRead(BUZZPIN)));
+         //digitalWrite(BUZZPIN, !(digitalRead(BUZZPIN)));
          errcounter++;
       }
       // OSZIA_HI();
