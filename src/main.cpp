@@ -1223,7 +1223,7 @@ void setup()
    {
       uint16_t wert = 500 + i * 50;
       // impulstimearray[i] = wert; // mittelwert
-      
+      wert = 750;
       servomittearray[i] = analogRead(adcpinarrayTeensy[i]);
       
       // potgrenzearray[i][0] = servomittearray[i];
@@ -1510,7 +1510,7 @@ void loop()
       {
          if(beepstatus)
          {
-           tone(BUZZPIN, 1000,500);
+           //tone(BUZZPIN, 1000,500);
          }
 
          throttlecounter += (data.throttle);
