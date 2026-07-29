@@ -78,12 +78,12 @@ const int NOTE_A   = 880; // A''
 #define EEPROM_WRITE 0
 #define EEPROM_READ 1
 
-#define EEPROMINDEX_U 0x10
-#define EEPROMINDEX_O 0x20
-#define EEPROMINDEX_M 0x30
+#define EEPROMINDEX_U 0x10          // 16
+#define EEPROMINDEX_O 0x20          // 32
+#define EEPROMINDEX_M 0x30          // 96
 
-#define EEPROMLEVELSETTINGS 0x40
-#define EEPROMEXPOSETTINGS 0x48
+#define EEPROMLEVELSETTINGS 0x40    // 128
+#define EEPROMEXPOSETTINGS 0x48     // 144
 
 #define EEPROMSLAVEINDEX_M 0x56
 

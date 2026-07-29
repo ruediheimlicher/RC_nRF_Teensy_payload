@@ -313,7 +313,7 @@ int8_t char_y = 0;
 // Menu
 uint8_t curr_model = 0; // aktuelles modell
 uint8_t speichermodel = 0;
-uint8_t curr_funktion = 0; // aktuelle funktion
+uint8_t curr_funktion = 0; // aktuelle funktionanzeige
 uint8_t curr_aktion = 0;   // aktuelle aktion
 
 uint8_t curr_wert = 0;
@@ -620,8 +620,15 @@ void eepromread()
       // Serial.print("\t");
       // Serial.print(eh);
       // Serial.print("\t");
+      if(el == 0xFF)
+      {
+         potgrenzearray[i][1] = 0;
+      }
+      else
+      {
+         potgrenzearray[i][1] = (eh << 8) | el;
+      }
       
-      potgrenzearray[i][1] = (eh << 8) | el;
       
       el = EEPROM.read(2 * (i + EEPROMINDEX_O));     // lo byte
       eh = EEPROM.read(2 * (i + EEPROMINDEX_O) + 1); // hi byte
@@ -630,25 +637,50 @@ void eepromread()
       // Serial.print(eh);
       // Serial.print("\t");
       
-      potgrenzearray[i][0] = (eh << 8) | el;
+      if(el == 0xFF)
+      {
+         potgrenzearray[i][0] = 0;
+      }
+      else
+      {
+         potgrenzearray[i][0] = (eh << 8) | el;
+      }
       
       el = EEPROM.read(2 * (i + EEPROMLEVELSETTINGS));
       //el &= 0x03;
-      kanalsettingarray[0][i][1] = el; // modell 0
+      if(el == 0xFF)
+      {
+         kanalsettingarray[0][i][1] = 0; // modell 0
+      }
+      else
+      {
+         kanalsettingarray[0][i][1] = el; // modell 0
+      }
+      
       
       eh = EEPROM.read(2 * (i + EEPROMEXPOSETTINGS));
       //eh &= 0x03;
+     //eh = 0;
       kanalsettingarray[0][i][2] = eh; // modell 0
+
+      
       
       el = EEPROM.read(2 * (i + EEPROMSLAVEINDEX_M));     // LO
       eh = EEPROM.read(2 * (i + EEPROMSLAVEINDEX_M) + 1); // HI
       uint16_t slavemitte = (eh << 8) | el;
-      Serial.print("read slavemitte:\t");
-      Serial.print(slavemitte);
-      Serial.print(" *\n");
+      
+      
+   
       
       Slavemittearray[i] = (eh << 8) | el;
-      
+      if(slavemitte == 0xFFFF)
+      {
+         Slavemittearray[i] = 127;
+      }
+
+         Serial.print("read slavemitte:\t");
+      Serial.print(Slavemittearray[i]);
+      Serial.print(" *\n");
       if (i == 0)
       {
          // Serial.print("\n");
@@ -1094,9 +1126,10 @@ void setCalib(void)
 
 void setup()
 {
-   anzeigestatus = ANZEIGE_SLAVE;
-   anzeigestatus = 0;
-   
+   //anzeigestatus = ANZEIGE_POT;
+   //anzeigestatus = 0;
+   //anzeigestatus = ANZEIGE_DATA;
+   anzeigestatus = ANZEIGE_LEVEL;
    masterslavestatus |= (1 << MASTER);
    uint8_t ee[16];
    delay(50);
@@ -1270,7 +1303,7 @@ int Throttle_Map255(int val, int fromlow, int fromhigh, int tolow, int tohigh, b
    
    uint8_t expowerta = expowertarray[THROTTLE] & 0x07;
    
-   uint16_t expoint = 3;
+   uint16_t expoint = 0;
    uint16_t levelint = 0;
    
    expoint = expoarray8[expowerta][val];
@@ -2459,7 +2492,7 @@ void loop()
    {
       loopcounter0 = 0;
       loopcounter1++;
-      if (loopcounter1 > BLINKRATE)
+      if (loopcounter1 > 2*BLINKRATE)
       {
          loopcounter1 = 0;
          //Serial.print("\tmasterslavestatus: ");
@@ -2562,9 +2595,12 @@ void loop()
                
             case ANZEIGE_DATA:
             {
+               /*
                for (int i = 0; i < NUM_SERVOS; i++)
                {
-                  Serial.print(potwertarray[i]);
+                  //Serial.print(potwertarray[i]);
+                  //Serial.print(" ");
+                  Serial.print(i);
                   Serial.print(" ");
                   
                   Serial.print("L: ");
@@ -2575,9 +2611,10 @@ void loop()
                   Serial.print(servomittearray[i]);
                   Serial.print(" potwert: ");
                   Serial.print(potwertarray[i]);
-                  Serial.print("\t");
+                  Serial.print("\n");
                   
                }
+               */
                Serial.print("\tYAW\t");
                Serial.print(data.yaw);
                Serial.print("\tPITCH\t");
@@ -2605,22 +2642,22 @@ void loop()
                Serial.print(kanalsettingarray[curr_model][0][1]);
                Serial.print("\t");
                
-               Serial.print(" *\t");
-               Serial.print("\tYAW levelwert raw\t");
-               Serial.print(levelwertarray[YAW],HEX);
+               //Serial.print(" *\t");
+               //Serial.print("\tYAW levelwert raw\t");
+               //Serial.print(levelwertarray[YAW],HEX);
                
-               Serial.print("\tYAW levelwertaraw\t");
+               Serial.print("\tlevelwertaraw\t");
                Serial.print(levelwertaraw,HEX);
-               Serial.print("\tYAW levelwertbraw\t");
+               Serial.print("\tlevelwertbraw\t");
                Serial.print(levelwertbraw,HEX);
                
                Serial.print(" kanalsettingarray 2 expo:\t");
                Serial.print(kanalsettingarray[curr_model][0][2]);
-               Serial.print("\tYAW expowert raw\t");
-               Serial.print(expowertarray[YAW],HEX);
-               Serial.print("\tYAW expowertaraw\t");
+               //Serial.print("\tYAW expowert raw\t");
+               //Serial.print(expowertarray[YAW],HEX);
+               Serial.print("\t expowertaraw\t");
                Serial.print(expowertaraw,HEX);
-               Serial.print("\tYAW expowertbraw\t");
+               Serial.print("\texpowertbraw\t");
                Serial.print(expowertbraw,HEX);
                Serial.print("\n");
             }break;
