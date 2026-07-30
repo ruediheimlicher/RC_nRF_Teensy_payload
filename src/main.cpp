@@ -168,6 +168,9 @@ uint8_t sendestunde = 0;
 // Status
 uint8_t blinkstatus = 0;
 uint8_t beepstatus = 0;
+uint8_t toneposition = 0;
+int tonearray[8] = {};
+
 
 uint8_t curr_steuerstatus = 0;
 
@@ -296,6 +299,9 @@ uint16_t potwert = 0;
 
 uint16_t errcounter = 0;
 uint16_t radiocounter = 0;
+
+uint8_t radiostatus = 0;
+#define RADIO_OK 1
 
 // ********************
 // ACK data ***********
@@ -1126,10 +1132,13 @@ void setCalib(void)
 
 void setup()
 {
+   tonearray[0] = NOTE_CIS;
+    tonearray[1] = NOTE_E;
+     tonearray[2] = NOTE_A;
    //anzeigestatus = ANZEIGE_POT;
-   //anzeigestatus = 0;
+   anzeigestatus = 0;
    //anzeigestatus = ANZEIGE_DATA;
-   anzeigestatus = ANZEIGE_LEVEL;
+   //anzeigestatus = ANZEIGE_LEVEL;
    masterslavestatus |= (1 << MASTER);
    uint8_t ee[16];
    delay(50);
@@ -1541,15 +1550,16 @@ void loop()
       sekundencounter++;
       if (sekundencounter % 2)
       {
-         if(beepstatus)
+         if ((beepstatus) && (radiostatus & (1<<RADIO_OK)))
          {
-           tone(BUZZPIN, 1000,500);
+            toneposition &= 0x03;
+           tone(BUZZPIN, tonearray[1],500);
          }
 
          throttlecounter += (data.throttle);
          throttlesekunden = throttlecounter >> 8;
          blinkstatus = 1;
-         if (throttlesekunden > 250)
+         if ((throttlesekunden > 250) && (radiostatus & (1<<RADIO_OK)))
          {
             //tone(BUZZPIN, 1000);
             beepstatus = 1;
@@ -1603,7 +1613,8 @@ void loop()
             {
                case 0:
                {
-                  
+                  beepstatus = !beepstatus;
+
                   startaltitude = altitude;
                   startaltitudeint = altitudeint;
                   if(altitude > startaltitude)
@@ -2433,7 +2444,7 @@ void loop()
          case 9:
          {
             //Serial.print("T 9 SAVE ");
-            beepstatus = 0;
+            
             switch (curr_screen)
             {
                case 0:
@@ -2497,6 +2508,14 @@ void loop()
          loopcounter1 = 0;
          //Serial.print("\tmasterslavestatus: ");
          //Serial.println((masterslavestatus & 0x03));
+         Serial.print("\tflyerbattsp: ");
+         Serial.print(flyerbatteriespannung);
+         Serial.print("\tradiostatus: ");
+         Serial.print(radiostatus);
+         Serial.print("\tbeepstatus: ");
+         Serial.print(beepstatus);
+       
+            Serial.print(" \n");
          if (TEST)
          {
             Serial.print("ACK erhalten: ");
@@ -2509,6 +2528,8 @@ void loop()
             Serial.print(ackData[2]);
             Serial.print("\t3\t");
             Serial.print(ackData[3]);
+
+            
             
             Serial.print(" \n");
          }
@@ -2847,8 +2868,18 @@ void loop()
          // batteriespannung = analogRead(A6);
          //      batteriespannung = analogRead(A1);
          
+
          flyerbatteriespannung = float(ackData[3]);
-         // y = 0.0135x + 5.1213
+
+         if ((flyerbatteriespannung < 125) && (radiostatus & (1<<RADIO_OK)))
+         {
+            beepstatus = 1;
+         }
+         else
+         {
+            beepstatus = 0;
+         }
+         
          
          
          
@@ -3311,6 +3342,7 @@ void loop()
          // ACK Payload ********
          if (radio.isAckPayloadAvailable())
          {
+            radiostatus |= (1<<RADIO_OK);
             radio.read(&ackData, sizeof(ackData));
             temperaturint = ackData[0] * 2;
             temperaturfloat = temperaturint/10;
@@ -3340,6 +3372,7 @@ void loop()
          }
          else
          {
+            radiostatus &= ~(1<<RADIO_OK);
             // Serial.println(F("Keine ACK-Daten erhalten"));
          }
          // ********************
@@ -3347,6 +3380,7 @@ void loop()
       }
       else
       {
+         radiostatus &= ~(1<<RADIO_OK);
          // Serial.println("radio error\n");
          //digitalWrite(BUZZPIN, !(digitalRead(BUZZPIN)));
          errcounter++;
