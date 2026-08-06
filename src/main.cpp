@@ -474,7 +474,7 @@ void slaveplugISR()
 void slaveISR()
 {
    uint32_t now = micros();
-   uint32_t dur = now - last;
+   dur = now - last;
    last = now;
    
    if (dur > 2500)
@@ -503,6 +503,7 @@ void slaveISR()
       else
       {
          red = Border_Mapvar255_slave(dur, 1100, Slavemittearray[slaveindex], 2000, false);
+         
       }
       
       Slavechannelarray[slaveindex] = red; // Kanalwert speichern
@@ -2514,12 +2515,14 @@ void loop()
          loopcounter1 = 0;
          //Serial.print("\tmasterslavestatus: ");
          //Serial.println((masterslavestatus & 0x03));
+         /*
          Serial.print("\tflyerbattsp: ");
          Serial.print(flyerbatteriespannung);
          Serial.print("\tradiostatus: ");
          Serial.print(radiostatus);
          Serial.print("\tbeepstatus: ");
          Serial.print(beepstatus);
+         */
        
             Serial.print(" \n");
          if (TEST)
@@ -2575,6 +2578,13 @@ void loop()
                
                Serial.print("\tYAW\t");
                Serial.print(data.yaw);
+
+               Serial.print("\tyaw dur\t");
+               Serial.print(dur);
+               Serial.print("\tyaw_slave\t");
+               Serial.print(yaw_slave);
+
+
                Serial.print("\tYAW  slave\t");
                uint16_t yawslave = Slavechannelarray[0];
                Serial.print(yawslave);
@@ -2583,9 +2593,9 @@ void loop()
                
                Serial.print("\tPITCH\t");
                Serial.print(data.pitch);
-               //Serial.print("\tPITCH slave\t");
-               //uint16_t pitchslave = Slavechannelarray[1];
-               //Serial.print(pitchslave);
+               Serial.print("\tPITCH slave\t");
+               uint16_t pitchslave = Slavechannelarray[1];
+               Serial.print(pitchslave);
                Serial.print("\tROLL\t");
                Serial.print(data.roll);
                Serial.print("\tTHROTTLE\t");
@@ -2877,7 +2887,7 @@ void loop()
 
          flyerbatteriespannung = float(ackData[3]);
 
-         if ((flyerbatteriespannung < 125) && (radiostatus & (1<<RADIO_OK)))
+         if ((flyerbatteriespannung > 50) && (flyerbatteriespannung < 125) && (radiostatus & (1<<RADIO_OK)))
          {
             beepstatus = 1;
          }
