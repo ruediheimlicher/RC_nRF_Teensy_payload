@@ -52,6 +52,9 @@ RF24 radio(CE_PIN, CSN_PIN);
 
 uint8_t debouncecheck = 0;
 
+uint32_t dur = 0;
+uint32_t dur_yaw = 0;
+
 uint8_t blinkcounter = 0;
 uint8_t impulscounter = 0;
 uint16_t throttlecounter = 0;
@@ -1135,10 +1138,13 @@ void setup()
    tonearray[0] = NOTE_CIS;
     tonearray[1] = NOTE_E;
      tonearray[2] = NOTE_A;
-   //anzeigestatus = ANZEIGE_POT;
-   anzeigestatus = 0;
+   anzeigestatus = ANZEIGE_POT;
+   
    //anzeigestatus = ANZEIGE_DATA;
    //anzeigestatus = ANZEIGE_LEVEL;
+
+   //anzeigestatus = 0;
+
    masterslavestatus |= (1 << MASTER);
    uint8_t ee[16];
    delay(50);
