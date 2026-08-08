@@ -221,7 +221,7 @@ float UBatt = 0;
 
 float flyerbatteriespannung = 0;
 float flyerbatteriespannungraw = 0;
-uint16_t flyerbatterieanzeige = 0;
+float  flyerbatterieanzeige = 0;
 float UFlyerBatt = 0;
 
 uint16_t pressureint = 0;
@@ -1620,8 +1620,10 @@ void loop()
             {
                case 0:
                {
-                  beepstatus = !beepstatus;
-
+                  beepstatus = 0;
+                  
+                  Serial.print(" beepstatus nach: ");
+                  Serial.print(beepstatus);
                   startaltitude = altitude;
                   startaltitudeint = altitudeint;
                   if(altitude > startaltitude)
@@ -2200,7 +2202,6 @@ void loop()
             
          case 7:
          {
-            beepstatus = 1;
             if (tastaturstatus & (1 << AKTION_OK))
             {
                // Serial.print("T 7 back ");
@@ -2576,6 +2577,11 @@ void loop()
                 Serial.print(potgrenzearray[PITCH][0]);
                 */
                
+                Serial.print("\tackData3\t");
+                Serial.print(ackData[3]);
+                Serial.print("\tflyerbatteriespannung\t");
+                Serial.print(flyerbatteriespannung);
+
                Serial.print("\tYAW\t");
                Serial.print(data.yaw);
 
@@ -2786,7 +2792,7 @@ void loop()
                
             case ANZEIGE_ADC:
             {
-               /*
+               
                 Serial.print("\tbattsp raw: ");
                 Serial.print(batteriespannungraw);
                 // Serial.print("\tbatteriespannung: ");
@@ -2805,7 +2811,7 @@ void loop()
                 Serial.print(UFlyerBatt);
                 Serial.print("\tflyerbattanz ");
                 Serial.print(flyerbatterieanzeige);
-                */
+               
                Serial.print("\tpressureint: ");
                Serial.print(pressureint);
                Serial.print("\tpressurefloat: ");
@@ -2885,9 +2891,19 @@ void loop()
          //      batteriespannung = analogRead(A1);
          
 
-         flyerbatteriespannung = float(ackData[3]);
+         flyerbatteriespannungraw = float(ackData[3]);
 
-         if ((flyerbatteriespannung > 50) && (flyerbatteriespannung < 125) && (radiostatus & (1<<RADIO_OK)))
+         if (flyerbatteriespannung == 0)
+         {
+            flyerbatteriespannung = flyerbatteriespannungraw;
+         }
+         else
+         {
+            flyerbatteriespannung = flyerbatteriespannung + 0.1 * (flyerbatteriespannungraw - flyerbatteriespannung);
+         }
+
+
+         if ((flyerbatteriespannung > 50) && (flyerbatteriespannung < 120) && (radiostatus & (1<<RADIO_OK)))
          {
             beepstatus = 1;
          }
@@ -2902,7 +2918,7 @@ void loop()
          //UFlyerBatt = fmap(flyerbatteriespannung, 60.0, 240.0, 0, 44.0);
          UFlyerBatt = 0.0135 * flyerbatteriespannung + 5.1213;
          
-         flyerbatterieanzeige = fmap(flyerbatteriespannung, 60.0, 240.0, 0, 44.0);;
+         flyerbatterieanzeige = fmap(flyerbatteriespannung, 90.0, 240.0, 0, 44.0);;
          
          
          //Serial.print(batteriemittel);
@@ -3389,6 +3405,8 @@ void loop()
          else
          {
             radiostatus &= ~(1<<RADIO_OK);
+
+
             // Serial.println(F("Keine ACK-Daten erhalten"));
          }
          // ********************
@@ -3396,6 +3414,8 @@ void loop()
       }
       else
       {
+         ackData[3] = 0;
+         UFlyerBatt = 0;
          radiostatus &= ~(1<<RADIO_OK);
          // Serial.println("radio error\n");
          //digitalWrite(BUZZPIN, !(digitalRead(BUZZPIN)));

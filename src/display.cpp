@@ -39,6 +39,7 @@ extern uint8_t                   calibstatus;
 extern uint8_t                   diststatus;
 
 extern uint16_t                   batteriespannung;
+extern float                  flyerbatteriespannung;
 
 extern uint16_t                  pressureint;
 extern uint16_t                  temperaturint;
@@ -110,7 +111,7 @@ extern float      UBatt;
 extern uint16_t   batterieanzeige;
 
 extern float      UFlyerBatt;
-extern uint16_t   flyerbatterieanzeige;
+extern float   flyerbatterieanzeige;
 
 
 extern Signal data;
@@ -402,9 +403,13 @@ void updateHomeScreen()
       
 
       //sprintf(buf0, "%3d", ackData[0]); // temp
-      sprintf(buf0, "%3d", temperaturint/10);
-      u8g2.drawStr(TAB0,64,buf0);
-      
+      //sprintf(buf0, "%3d", temperaturint/10);
+      //u8g2.drawStr(TAB0,64,buf0);
+
+      char bufb[6];
+      u8g2.setCursor(4,64);
+      u8g2.print(flyerbatteriespannung);
+
       // sprintf(buf0, "%3d", ackData[1]); // Pitch
       //u8g2.drawStr(TAB0+28,64,buf0);
       
