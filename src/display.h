@@ -26,6 +26,8 @@ extern uint8_t ackData[4];
 
 extern U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2;
 
+
+
 void initDisplay();
 void oled_fill(uint8_t x,uint8_t y,uint8_t l);
 void oled_setInt(uint8_t x,uint8_t y, uint16_t data);
