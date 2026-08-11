@@ -2644,10 +2644,14 @@ void loop()
             {
                Serial.print("\ts");
                Serial.print("\tts");
-               Serial.print("\tdt");
+               Serial.print("\tdatathrottle");
                Serial.print("\tfb r");
                Serial.print("\tfb");
                Serial.print("\tfba");
+               Serial.print("\tUFlyerBatt");
+
+
+
                Serial.print("\n");
             }
 
@@ -2662,8 +2666,11 @@ void loop()
             Serial.print(flyerbatteriespannungraw);
             Serial.print("\t");
             Serial.print(flyerbatteriespannung);
-            //Serial.print("\t");
-            //Serial.print(flyerbatterieanzeige);
+            Serial.print("\t");
+            Serial.print(flyerbatterieanzeige);
+            Serial.print("\t");
+            Serial.print(UFlyerBatt);
+            
 
             //Serial.print("\n");
          }
@@ -2873,7 +2880,7 @@ void loop()
          // batteriespannung = analogRead(A6);
          //      batteriespannung = analogRead(A1);
 
-         flyerbatteriespannungraw = float(ackData[3]);
+         //flyerbatteriespannungraw = float(ackData[3]);
 
          if (flyerbatteriespannung == 0)
          {
@@ -2894,6 +2901,7 @@ void loop()
          }
 
          // UFlyerBatt = fmap(flyerbatteriespannung, 60.0, 240.0, 0, 44.0);
+
          UFlyerBatt = 0.0135 * flyerbatteriespannung + 5.1213;
 
          flyerbatterieanzeige = fmap(flyerbatteriespannung, 90.0, 240.0, 0, 44.0);
@@ -3342,7 +3350,7 @@ void loop()
                diffaltitudeint = altitudeint - startaltitudeint;
                updateHomeScreen();
             }
-
+            flyerbatteriespannungraw = float(ackData[3]);
             /*
              //Serial.print("ACK erhalten: ");
              //Serial.print("\t");
@@ -3368,7 +3376,7 @@ void loop()
       else
       {
          ackData[3] = 0;
-         UFlyerBatt = 0;
+         //UFlyerBatt = 0;
          radiostatus &= ~(1 << RADIO_OK);
          // Serial.println("radio error\n");
          // digitalWrite(BUZZPIN, !(digitalRead(BUZZPIN)));
