@@ -135,15 +135,19 @@ uint8_t char_y_menu = 2;
 //char titelbuffer[20];
 
 
-U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/U8X8_PIN_NONE);
-
+//U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/U8X8_PIN_NONE);
+U8G2_SSD1327_WS_128X128_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 
 
 void initDisplay()
 {
+   u8g2.setI2CAddress(0x3D << 1);  
    u8g2.begin();
+
    uint8_t c = 0;
 }
+
+
 
 /*
  void oled_fill(uint8_t x,uint8_t y,uint8_t l)
@@ -409,8 +413,8 @@ void updateHomeScreen()
       //u8g2.drawStr(TAB0,64,buf0);
 
       char bufb[6];
-      u8g2.setCursor(4,64);
-      u8g2.print(flyerbatteriespannung);
+      //u8g2.setCursor(4,64);
+      //u8g2.print(flyerbatteriespannung);
 
       // sprintf(buf0, "%3d", ackData[1]); // Pitch
       //u8g2.drawStr(TAB0+28,64,buf0);
@@ -429,19 +433,19 @@ void updateHomeScreen()
       sprintf(buf1, "%3d", altitudeint); // alt
       //  sprintf(buf1, "%3d", 1234); // alt
       
-      u8g2.drawStr(TAB0+34,64,buf1);
+      //u8g2.drawStr(TAB0+34,64,buf1);
       
       sprintf(buf1, "%3d", startaltitudeint); // alt
-      u8g2.drawStr(TAB0+64,64,buf1);
+      //u8g2.drawStr(TAB0+64,64,buf1);
       
       
       u8g2.setDrawColor(0);
-      u8g2.drawBox(TAB0,22 ,46,26);
+      u8g2.drawBox(TAB0,22 ,50,26);
       u8g2.setDrawColor(1);
       sprintf(buf1, "%3d", diffaltitudeint); // diffalt
       
       u8g2.setFont(u8g2_font_logisoso22_tf);  
-      u8g2.drawStr(TAB0,46,buf1);
+      u8g2.drawStr(TAB0,50,buf1);
       
       u8g2.setFont(u8g2_font_t0_15_mr); 
       
@@ -1022,21 +1026,22 @@ void refreshScreen(void)
          {
             sprintf(buf, "%2d:%2d",stopminute,stopsekunde);
          }
-         
-         u8g2.drawStr(50,34,buf);
+         u8g2.setCursor(4,74);
+         u8g2.print("T:");
+         u8g2.drawStr(24,74,buf);
          
          //u8g2.setCursor(62,28);
          //u8g2.print(throttlecounter);
          
          //sprintf(buf,"%1.0F", throttlesekunden);
          
-         u8g2.setCursor(52,48);
-         u8g2.print("T:");
+         u8g2.setCursor(4,92);
+         u8g2.print("M:");
          sprintf(buf, "%3d",throttlesekunden);
-         u8g2.setDrawColor(0);
-         u8g2.drawBox(66,36,28,12);
+         //u8g2.setDrawColor(0);
+         u8g2.drawFrame(24,80,32,14);
          u8g2.setDrawColor(1);
-         u8g2.drawStr(66,48,buf);
+         u8g2.drawStr(24,92,buf);
          
          
          u8g2.sendBuffer();

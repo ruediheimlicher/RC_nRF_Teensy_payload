@@ -1107,6 +1107,10 @@ void setCalib(void)
 
 void setup()
 {
+   Wire.begin();
+   Wire.setClock(400000);
+
+
    tonearray[0] = NOTE_CIS;
    tonearray[1] = NOTE_E;
    tonearray[2] = NOTE_A;
@@ -1125,7 +1129,7 @@ void setup()
 
    pinMode(OSZIA_PIN, OUTPUT);
 
-   Serial.begin(9600);
+   Serial.begin(115200);
 
    // PPM decode, von RC_22
    pinMode(PPM_DIR_PIN, INPUT_PULLUP);
@@ -1197,9 +1201,9 @@ void setup()
    // 0.96"
 
    initDisplay();
-   _delay_ms(100);
+   //_delay_ms(500);
 
-   // oled_vertikalbalken(BATTX, BATTY, BATTB, BATTH);
+
 
    setHomeScreen();
 
